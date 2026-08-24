@@ -124,7 +124,7 @@ public class Main{
                 mv("Inferno",       140, Constants.T_FIRE, 50, "special", "burn"),
             }),
 
-            new Template("Tidalfin", Constants.T_WATER, 520, 75, 90, 85, 95, 75, new MoveBlueprint[]{
+            new Template("Tidalfin", Constants.T_WATER, 520, 75, 90, 85, 95, 85, new MoveBlueprint[]{
                 mv("Water Gun", 40, Constants.T_WATER, 100, "special", null),
                 mv("Aqua Jet", 50, Constants.T_WATER, 100, "physical", null),
                 mv("Surf", 90, Constants.T_WATER, 80, "special",null),
@@ -174,7 +174,7 @@ public class Main{
                 mv("Bite",         60,  Constants.T_DARK,   100, "physical", null),
                 mv("Crunch",       80,  Constants.T_DARK,    95, "physical", null),
                 mv("Dark Pulse",   80,  Constants.T_DARK,    95, "special",  null),
-                mv("Night Daze",   85,  Constants.T_DARK,    90, "special",  null),
+                mv("Night Daze",   90,  Constants.T_DARK,    90, "special",  null),
                 mv("Scratch",      40,  Constants.T_NORMAL, 100, "physical", null),
                 mv("Slash",        70,  Constants.T_NORMAL, 100, "physical", null),
                 mv("Feint Attack", 60,  Constants.T_DARK,   100, "physical", null),
@@ -193,7 +193,7 @@ public class Main{
                 mv("Mega Punch",    90, Constants.T_NORMAL,  80, "physical", null),
             }),
 
-            new Template("Rockruff", Constants.T_ROCK, 580, 75, 55, 95, 85, 60,
+            new Template("Rockruff", Constants.T_ROCK, 580, 75, 55, 95, 85, 75,
             new MoveBlueprint[]{
                 mv("Bite",             60,  Constants.T_DARK,     100, "physical", null),
                 mv("Rock Slide",       75,  Constants.T_ROCK,      90, "physical", null),
