@@ -218,4 +218,31 @@ public class Main{
             }),
         };
     }
+
+    static class FighterFactory{
+
+        static Fighter create(int pid, int[] movesIds){
+            Template t = CreatureData.TEMPLATES[pid];
+            Fighter  f = new Fighter();
+
+            f.name          = t.name;
+            f.creatureId    = pid;
+            f.type          = t.type;
+            f.hp = f.maxHP  = t.hp;
+            f.attack        = t.attack;
+            f.spAtk         = t.spAtk;
+            f.defence       = t.defence;
+            f.spDef         = t.spDef;
+            f.speed         = t.speed;
+
+            for (int i = 0; i < Constants.MOVES_BATTLE; i++){
+                MoveBlueprint mb = t.moves[movesIds[i]];
+                f.moves[i] = new Move(mb.name, mb.power, mb.type, mb.accuracy, mb.category, mb.effect);
+    
+            }
+            return f;
+        }
+    }
+
+    
 }
