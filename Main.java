@@ -289,6 +289,81 @@ public class Main{
             return Math.max(1, dmg);
         }
 
+        //return true if enemy faints
+        static boolean doAttack(Fighter atk, Fighter def, int mi){
+            Move m = atk.moves[mi];
+
+            if(atk.status == Status.PARALYSIS && Math.random() < 0.25){
+                appendLog("[PAR] "+ atk.name + "is paralysed and can't move! \n");
+                return false;
+            }
+
+            if(atk.status == Status.SLEEP){
+                atk.sleepTurns--;
+                if(atk.sleepTurns <= 0){
+                    atk.status = Status.NONE;
+                    appendLog("[WAKE] "+ atk.name + " woke up!\n");
+                }
+                else{
+                    appendLog("[SLP] "+ atk.name + " is fast asleep!\n");
+                    return false;
+                }
+            }
+
+            int dmg = calcDamage(atk, def, mi);
+
+            if (dmg == -2){
+                appendLog("[NO PP] "+ atk.name + " can't use "+ m.name + "!\n");
+                return false;
+            }
+            if ( dmg == -1){
+                appendLog("[MISS] "+ atk.name + "used" + m.name + "... Missed! \n");
+                return false;
+            }
+            if (dmg == 0){
+                appendLog("[IMMUNE] "+ def.name + " is immune !\n");
+                return false;
+            }
+
+            def.hp = Math.max(0, def.hp - dmg);
+
+            int te = Constants.CHART[m.type][def.type];
+            String eff = (te == 20) ? "SUPER EFFECTIVE" : (te == 5) ? " not very effective." : "";
+
+            String stab = (m.type == atk.type) ? "[STAB] " : "";
+            appendLog("[ATK] "+ atk.name + "->" + def.name + " : " + m.name + " " + dmg + " dmg!\n" + stab + eff + "\n");
+
+            if(m.effect != null && def.status == Status.NONE){
+                switch (m.effect){
+                    case "burn":
+                        def.status = Status.BURN;
+                        appendLog("[STATUS] "+ def.name + " was burned!\n");
+                        break;
+                    case "paralysis":
+                        def.status = Status.PARALYSIS;
+                        appendLog("[STATUS] "+ def.name + " was paralysed!\n");
+                        break;
+                    case "poison":
+                        def.status = Status.POISON;
+                        appendLog("[STATUS] "+ def.name + " was poisoned!\n");
+                        break;
+                    case "sleep":
+                        def.status = Status.SLEEP;
+                        def.sleepTurns = 1 + (int)(Math.random() * 3);
+                        appendLog("[STATUS] "+ def.name + " fell asleep!\n");
+                        break;
+                }
+            }
+
+            if (def.hp == 0){
+                appendLog("[KO] " + def.name + " fainted!\n");
+                return true;
+            }
+
+
+            return false;
+        }
 
     }
+
 }
