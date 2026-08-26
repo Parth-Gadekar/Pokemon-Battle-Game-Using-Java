@@ -105,6 +105,23 @@ public class Main{
         int active = 0;
     }
 
+    static class Game { 
+        Phase phase = Phase.IDLE;
+        Party party = new Party();
+        Party enemy = new Party();
+        int result = 0;
+        boolean forceSwitch = false;
+        StringBuilder log = new StringBuilder();
+
+        private static Game instance;
+        static Game get(){
+            if (instance == null) instance = new Game();
+            return instance;
+        }
+
+        static void reset() { instance = new Game(); }
+    }
+
     static class CreatureData {
         private static MoveBlueprint mv(String name, int power, int type, int accuracy, String cat, String eff){
             return new MoveBlueprint(name, power, type, accuracy, cat, eff);
@@ -244,5 +261,34 @@ public class Main{
         }
     }
 
-    
+    static class BattleEngine {
+
+        static void appendLog(String msg) { Game.get().log.append(msg);}
+        // return : -2 no pp, -1 miss, 0 immune, 1 damage dealt
+
+        static int calcDamage(Fighter atk, Fighter def, int mi){
+            Move m = atk.moves[mi];
+            if (m.PP <= 0) return -2;
+            m.PP--;
+
+            if ((int)(Math.random() * 100)>= m.accuracy) return -1;
+
+            int te = Constants.CHART[m.type][def.type];
+            if (te == 0) return 0;
+
+            int atkStat = m.category.equals("special") ? atk.spAtk : atk.attack;
+            int defStat = m.category.equals("special") ? def.spDef : def.defence;
+
+            int dmg = m.power * atkStat/ (defStat * 2);
+
+            if (m.type == atk.type) dmg *= 15/10;
+
+            if (atk.status == Status.BURN && m.category.equals("physical")) dmg /= 2 ;
+
+            dmg = dmg * te/10;
+            return Math.max(1, dmg);
+        }
+
+
+    }
 }
