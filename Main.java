@@ -107,7 +107,7 @@ public class Main{
 
     static class Game { 
         Phase phase = Phase.IDLE;
-        Party party = new Party();
+        Party player = new Party();
         Party enemy = new Party();
         int result = 0;
         boolean forceSwitch = false;
@@ -359,11 +359,136 @@ public class Main{
                 appendLog("[KO] " + def.name + " fainted!\n");
                 return true;
             }
-
-
             return false;
         }
 
-    }
+        static boolean applyEndofTurn(Fighter f){
+            if(f.hp <= 0) return false;
+            if(f.status == Status.POISON){
+                int dmg = Math.max(1, f.maxHP/8);
+                f.hp = Math.max(0, f.hp - dmg);
+                appendLog("[PSN] " + f.name + " took " + dmg + " poison damage!\n");
+            }
+            if(f.status == Status.BURN){
+                int dmg = Math.max(1, f.maxHP/16);
+                f.hp = Math.max(0, f.hp - dmg);
+                appendLog("[BRN] " + f.name + " took "+ dmg+ " burn damage!\n");
+            }
+            return f.hp == 0;
+        }
 
+        static int countAlive(Party party){
+            int n= 0;
+            for( Fighter f : party.slots) if (f != null && f.hp > 0) n++;
+            return n;
+        }
+
+        static void enemyAutoSwitch(){
+            Game g = Game.get();
+            Party ep = g.enemy;
+            for(int i = 0; i< Constants.PARTY_SIZE; i++){
+                if (i != ep.active && ep.slots[i] != null && ep.slots[i].hp > 0){
+                    ep.active = i;
+                    appendLog("[SWITCH] Enemy Sent out " + ep.slots[i].name + "!\n");
+                    return;
+                }
+            }
+        }
+
+        static int EnemyPickMove() {
+            Fighter ef = Game.get().enemy.slots[Game.get().enemy.active];
+            int [] avail = new int[Constants.MOVES_BATTLE];
+            int cnt = 0;
+            for (int i = 0; i< Constants.MOVES_BATTLE; i++){
+                if(ef.moves[i].PP > 0){
+                    avail[cnt++] = i;
+                }
+            }
+            return cnt == 0 ? -1 : avail[(int)(Math.random() * cnt)];
+        }
+
+        static void processRound(int playerMi) {
+            Game g = Game.get();
+            Fighter pf = g.player.slots[g.player.active];
+            Fighter ef = g.enemy.slots[g.enemy.active];
+            int em = EnemyPickMove();
+
+            boolean playerFirst = pf.speed > ef.speed || (pf.speed == ef.speed && Math.random() < 0.5);
+
+            appendLog("[TURN] " + (playerFirst ? pf.name : ef.name) + " goes first!\n");
+
+            if (playerFirst){
+                if(pf.moves[playerMi].PP <= 0){
+                    appendLog("[SKIP] You have no pp for that move! \n");
+                }
+                else{
+                    if (doAttack(pf, ef, playerMi)){
+                        if(countAlive(g.enemy) == 0){
+                            g.result = 1; 
+                            g.phase = Phase.OVER;
+                            return;
+                        }
+                        enemyAutoSwitch();
+                        ef = g.enemy.slots[g.enemy.active];
+                    }
+                }
+
+                em = EnemyPickMove();
+                if(em < 0){
+                    appendLog("[SKIP] Enemy has no pp left!\n");
+                }
+                else{
+                    if(doAttack(ef, pf, em)){
+                        if(countAlive(g.player) == 0){
+                            g.result = 1; 
+                            g.phase = Phase.OVER;
+                            return;
+                        }
+                        g.forceSwitch = true;
+                    }
+                }
+            }
+            else {
+               if (em < 0){
+                appendLog("[SKIP] Enemy has no PP left! \n");
+               } else {
+                if (doAttack(ef, pf, em)){
+                    if ( countAlive(g.player) == 0){
+                        g.result = -1;
+                        g.phase = Phase.OVER;
+                        return;
+                        }
+                    g.forceSwitch = true;
+                    return;
+                    }
+                }
+
+                if (pf.moves[playerMi].PP <= 0){
+                    appendLog("[SKIP]  You have no PP for that move!\n");
+                }
+                else{
+                    if (doAttack(pf, ef, playerMi)) {
+                        if (countAlive(g.enemy) == 0) { 
+                            g.result = 1; 
+                            g.phase = Phase.OVER; 
+                            return; 
+                        }
+                    enemyAutoSwitch();
+                }
+            }
+        }
+
+         if (applyEndofTurn(pf) && g.phase != Phase.OVER) {
+                appendLog("[KO]   " + pf.name + " fainted from status!\n");
+                if (countAlive(g.player) == 0) { g.result = -1; g.phase = Phase.OVER; return; }
+                g.forceSwitch = true;
+            }
+        if (applyEndofTurn(ef) && g.phase != Phase.OVER) {
+                appendLog("[KO]   " + ef.name + " fainted from status!\n");
+                if (countAlive(g.enemy) == 0) { g.result = 1; g.phase = Phase.OVER; return; }
+                enemyAutoSwitch();
+            }
+        }
+    }
 }
+
