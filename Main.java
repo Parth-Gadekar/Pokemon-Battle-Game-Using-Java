@@ -149,6 +149,7 @@ public class Main{
                 mv("Tackle", 35, Constants.T_NORMAL, 100, "physical", null),
                 mv("Aqua Tail", 75, Constants.T_WATER, 90, "physical", null),
                 mv("Muddy Water", 85, Constants.T_WATER, 85, "special", null),
+                mv("Scald", 70, Constants.T_WATER, 90, "special", "burn")
             }),
 
             new Template("Thornback", Constants.T_GRASS, 540, 70, 80, 90, 85, 65, new MoveBlueprint[]{
