@@ -50,6 +50,11 @@ let selectedMoveIds = new Set();
 let busy            = false;
 let lastLogLen      = 0;
 
+// What's currently shown on screen for each side, kept in sync line-by-line
+// as the battle log plays out, so HP drains / shakes happen exactly when
+// their log line appears instead of all at once up front.
+let display = { player: null, enemy: null };
+
 /* ═══════════════════════════════════════════
    UTILITY
    ═══════════════════════════════════════════ */
@@ -151,7 +156,7 @@ function clearLog() {
   lastLogLen = 0;
 }
 
-function appendLog(rawLog, onDone) {
+function appendLog(rawLog, onLine, onDone) {
   const logDiv   = document.getElementById('battle-log');
   const lines    = rawLog.split('\n').filter(l => l.trim());
   const newLines = lines.slice(lastLogLen);
@@ -169,9 +174,99 @@ function appendLog(rawLog, onDone) {
     logDiv.appendChild(span);
     logDiv.appendChild(document.createElement('br'));
     logDiv.scrollTop = logDiv.scrollHeight;
+    if (onLine) onLine(line);
     setTimeout(showNext, LOG_DELAY_MS);
   }
   showNext();
+}
+
+/* ═══════════════════════════════════════════
+   LOG-DRIVEN BATTLE ANIMATION
+   ═══════════════════════════════════════════
+   Each log line names the fighter(s) involved by name, so we match
+   that name against whichever fighter is currently displayed on each
+   side to figure out who to animate — then apply the change at the
+   moment the line appears, instead of jumping straight to the final
+   state before the log has even played. */
+
+function sideForName(name) {
+  if (display.player && display.player.name === name) return 'player';
+  if (display.enemy  && display.enemy.name  === name) return 'enemy';
+  return null;
+}
+
+function applyDamageToSide(side, dmg) {
+  if (!display[side]) return;
+  display[side].hp = Math.max(0, display[side].hp - dmg);
+  setHpBar(`${side}-hp-fill`, `${side}-hp-text`, display[side].hp, display[side].maxHp);
+  shakePanel(side);
+}
+
+function applyStatusToSide(side, status) {
+  if (!display[side]) return;
+  display[side].status = status;
+  document.getElementById(`${side}-status-badge`).innerHTML = statusBadge(status);
+}
+
+function applySwitchToSide(side, name, finalState) {
+  const party   = side === 'player' ? finalState.player : finalState.enemy;
+  const fighter = party.slots.find(f => f && f.name === name);
+  if (!fighter) return;
+  display[side] = { name: fighter.name, hp: fighter.hp, maxHp: fighter.maxHp, status: fighter.status };
+  updateFighterUI(side, fighter);
+}
+
+const RE_ATK    = /^\[ATK\] (.+?)->(.+?) : .+? (\d+) dmg!/;
+const RE_PSN    = /^\[PSN\] (.+?) took (\d+) poison damage!/;
+const RE_BRN    = /^\[BRN\] (.+?) took (\d+) burn damage!/;
+const RE_STATUS = /^\[STATUS\] (.+?) (?:was burned|was paralysed|was poisoned|fell asleep)!/;
+const RE_WAKE   = /^\[WAKE\] (.+?) woke up!/;
+const RE_SWITCH_YOU   = /^\[SWITCH\] You sent out (.+?)!/;
+const RE_SWITCH_ENEMY = /^\[SWITCH\] Enemy Sent out (.+?)!/;
+
+function processLogLine(line, finalState) {
+  let m;
+
+  if ((m = line.match(RE_ATK))) {
+    const [, , defender, dmg] = m;
+    const side = sideForName(defender);
+    if (side) applyDamageToSide(side, parseInt(dmg, 10));
+    return;
+  }
+  if ((m = line.match(RE_PSN))) {
+    const side = sideForName(m[1]);
+    if (side) applyDamageToSide(side, parseInt(m[2], 10));
+    return;
+  }
+  if ((m = line.match(RE_BRN))) {
+    const side = sideForName(m[1]);
+    if (side) applyDamageToSide(side, parseInt(m[2], 10));
+    return;
+  }
+  if ((m = line.match(RE_STATUS))) {
+    const side = sideForName(m[1]);
+    if (side) {
+      const status = /burned/.test(line) ? 'BURN'
+                   : /paralysed/.test(line) ? 'PARALYSIS'
+                   : /poisoned/.test(line) ? 'POISON'
+                   : /asleep/.test(line) ? 'SLEEP' : 'NONE';
+      applyStatusToSide(side, status);
+    }
+    return;
+  }
+  if ((m = line.match(RE_WAKE))) {
+    const side = sideForName(m[1]);
+    if (side) applyStatusToSide(side, 'NONE');
+    return;
+  }
+  if ((m = line.match(RE_SWITCH_YOU))) {
+    applySwitchToSide('player', m[1], finalState);
+    return;
+  }
+  if ((m = line.match(RE_SWITCH_ENEMY))) {
+    applySwitchToSide('enemy', m[1], finalState);
+    return;
+  }
 }
 
 /* ═══════════════════════════════════════════
@@ -337,13 +432,16 @@ function initBattle(state) {
   const pActive = state.player.slots[state.player.active];
   const eActive = state.enemy.slots[state.enemy.active];
 
+  display.player = { name: pActive.name, hp: pActive.hp, maxHp: pActive.maxHp, status: pActive.status };
+  display.enemy  = { name: eActive.name, hp: eActive.hp, maxHp: eActive.maxHp, status: eActive.status };
+
   updateFighterUI('player', pActive);
   updateFighterUI('enemy',  eActive);
   renderMoveButtons(pActive.moves, false);
   renderPartySlots(state.player);
   renderEnemyParty(state.enemy);
 
-  appendLog(state.log, () => {
+  appendLog(state.log, line => processLogLine(line, state), () => {
     if (state.forceSwitch) showForceSwitchUI();
     else renderMoveButtons(pActive.moves, true);
   });
@@ -444,16 +542,24 @@ async function switchPokemon(slot) {
   await api('POST', '/api/switch', { slot });
   const state = await api('GET', '/api/state');
 
-  const pActive = state.player.slots[state.player.active];
-  const eActive = state.enemy.slots[state.enemy.active];
-
-  updateFighterUI('player', pActive);
-  updateFighterUI('enemy',  eActive);
+  // The switch itself happens immediately (player choice), so show that
+  // part right away — only the subsequent counter-attack, if any, should
+  // wait for its log line.
+  const switchedIn = state.player.slots[state.player.active];
+  display.player = { name: switchedIn.name, hp: switchedIn.hp, maxHp: switchedIn.maxHp, status: switchedIn.status };
+  updateFighterUI('player', switchedIn);
   renderPartySlots(state.player);
-  renderEnemyParty(state.enemy);
-  shakePanel('player');
 
-  appendLog(state.log, () => {
+  appendLog(state.log, line => processLogLine(line, state), () => {
+    const pActive = state.player.slots[state.player.active];
+    const eActive = state.enemy.slots[state.enemy.active];
+    display.player = { name: pActive.name, hp: pActive.hp, maxHp: pActive.maxHp, status: pActive.status };
+    display.enemy  = { name: eActive.name, hp: eActive.hp, maxHp: eActive.maxHp, status: eActive.status };
+    updateFighterUI('player', pActive);
+    updateFighterUI('enemy',  eActive);
+    renderPartySlots(state.player);
+    renderEnemyParty(state.enemy);
+
     if (state.phase === 'over') {
       showGameOver(state);
     } else if (state.forceSwitch) {
@@ -497,17 +603,18 @@ document.querySelectorAll('.move-btn').forEach(btn => {
     await api('POST', '/api/move', { move_index: mi });
     const state = await api('GET', '/api/state');
 
-    const pActive = state.player.slots[state.player.active];
-    const eActive = state.enemy.slots[state.enemy.active];
+    appendLog(state.log, line => processLogLine(line, state), () => {
+      // Final sync: guarantees the display exactly matches server truth
+      // even if any log line's animation was missed above.
+      const pActive = state.player.slots[state.player.active];
+      const eActive = state.enemy.slots[state.enemy.active];
+      display.player = { name: pActive.name, hp: pActive.hp, maxHp: pActive.maxHp, status: pActive.status };
+      display.enemy  = { name: eActive.name, hp: eActive.hp, maxHp: eActive.maxHp, status: eActive.status };
+      updateFighterUI('player', pActive);
+      updateFighterUI('enemy',  eActive);
+      renderPartySlots(state.player);
+      renderEnemyParty(state.enemy);
 
-    updateFighterUI('player', pActive);
-    updateFighterUI('enemy',  eActive);
-    renderPartySlots(state.player);
-    renderEnemyParty(state.enemy);
-    shakePanel('player');
-    shakePanel('enemy');
-
-    appendLog(state.log, () => {
       if (state.phase === 'over') {
         showGameOver(state);
       } else if (state.forceSwitch) {
@@ -533,5 +640,6 @@ document.getElementById('btn-play-again').addEventListener('click', async () => 
   selectedMoveIds = new Set();
   busy            = false;
   lastLogLen      = 0;
+  display         = { player: null, enemy: null };
   showScreen('screen-welcome');
 });
