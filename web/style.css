@@ -1,0 +1,537 @@
+/* ══════════════════════════════════════════
+   Pokemon Lite — Clean Dark UI
+   ══════════════════════════════════════════ */
+
+:root {
+  --bg:        #0a0c10;
+  --bg2:       #11151d;
+  --bg3:       #1a1f2e;
+  --panel:     #141822;
+  --border:    #2a3350;
+  --accent:    #4cf07a;
+  --accent2:   #f0d04c;
+  --danger:    #f04c4c;
+  --text:      #c8d4f0;
+  --text-dim:  #5a6580;
+  --text-muted:#3a4260;
+  --pixel:     'Press Start 2P', monospace;
+  --vt:        'VT323', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--vt);
+  font-size: 18px;
+  overflow: hidden;
+}
+
+/* ── Screens ──────────────────────────────── */
+
+.screen {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s ease;
+  overflow-y: auto;
+}
+.screen.active { opacity: 1; pointer-events: all; }
+
+/* ── Scanlines ────────────────────────────── */
+
+.scanlines {
+  /* JavaFX WebView's software renderer has to recomposite this whole
+     full-screen alpha layer on every repaint below it, which made the
+     whole app feel laggy. Cut the opacity and drop the z-index so it's
+     much cheaper to blend, and no longer sits above absolutely everything. */
+  position: fixed; inset: 0; z-index: 1;
+  background: repeating-linear-gradient(
+    0deg, transparent, transparent 2px,
+    rgba(0,0,0,0.09) 2px, rgba(0,0,0,0.09) 4px
+  );
+  pointer-events: none;
+}
+
+/* ── Pixel button ─────────────────────────── */
+
+.btn-pixel {
+  font-family: var(--pixel);
+  font-size: 10px;
+  padding: 14px 28px;
+  border: none;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: transform 0.08s, filter 0.08s;
+  clip-path: polygon(
+    0 4px, 4px 0, calc(100% - 4px) 0, 100% 4px,
+    100% calc(100% - 4px), calc(100% - 4px) 100%,
+    4px 100%, 0 calc(100% - 4px)
+  );
+}
+.btn-pixel:hover  { transform: scale(1.04); filter: brightness(1.15); }
+.btn-pixel:active { transform: scale(0.97); }
+.btn-pixel:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+.btn-primary { background: var(--accent);  color: #050a06; }
+.btn-danger  { background: var(--danger);  color: #fff;    }
+
+/* ── Screen header ────────────────────────── */
+
+.screen-header {
+  text-align: center;
+  padding: 24px 16px 10px;
+  width: 100%;
+}
+.screen-title {
+  font-family: var(--pixel);
+  font-size: 13px;
+  color: var(--accent);
+  letter-spacing: 2px;
+  text-shadow: 0 0 12px rgba(76,240,122,.45);
+}
+.screen-sub {
+  font-family: var(--vt);
+  font-size: 20px;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+
+/* ════════════════════════════════════════════
+   WELCOME SCREEN
+   ════════════════════════════════════════════ */
+
+.welcome-wrap {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 28px; z-index: 1;
+}
+.logo-area { text-align: center; }
+.logo-sprite {
+  font-size: 72px; line-height: 1;
+  /* This element's `transform` animates forever, which forces a repaint
+     every frame. `filter: drop-shadow` recomputes a blur on every one of
+     those repaints and is very costly in WebView's software renderer —
+     `text-shadow` gives a similar glow far more cheaply. */
+  text-shadow: 0 0 24px rgba(76,240,122,.6);
+  animation: float 3s ease-in-out infinite;
+}
+@keyframes float {
+  0%,100% { transform: translateY(0);     }
+  50%      { transform: translateY(-10px); }
+}
+.logo-title {
+  font-family: var(--pixel);
+  font-size: 28px; color: var(--accent);
+  line-height: 1.4;
+  text-shadow: 4px 4px 0 #0a3020, 0 0 24px rgba(76,240,122,.5);
+  margin-top: 12px;
+}
+.logo-sub {
+  font-family: var(--vt);
+  font-size: 20px; color: var(--text-dim);
+  letter-spacing: 3px; margin-top: 8px;
+}
+.legend {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 4px;
+  font-family: var(--vt); font-size: 19px;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  background: var(--panel);
+  padding: 12px 24px; border-radius: 4px;
+}
+.legend span::before { content: '▸ '; color: var(--accent2); }
+
+/* ════════════════════════════════════════════
+   POKEMON SELECT
+   ════════════════════════════════════════════ */
+
+.team-preview {
+  display: flex; gap: 16px;
+  justify-content: center;
+  margin-top: 10px;
+}
+.team-preview-slot {
+  font-size: 28px;
+  background: var(--panel);
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  width: 52px; height: 52px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted);
+}
+.team-preview-slot.filled {
+  border-color: var(--accent);
+  box-shadow: 0 0 10px rgba(76,240,122,.3);
+}
+
+.pokemon-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 16px 24px 32px;
+  max-width: 900px; width: 100%;
+}
+
+.pokemon-card {
+  background: var(--panel);
+  border: 2px solid var(--border);
+  border-radius: 6px;
+  padding: 16px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 8px;
+}
+.pokemon-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,.5);
+}
+.pokemon-card.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 16px rgba(76,240,122,.35);
+}
+.pokemon-card.picked {
+  opacity: 0.35;
+  cursor: not-allowed;
+  filter: grayscale(0.6);
+}
+.pcard-sprite { font-size: 48px; line-height: 1; }
+.pcard-name {
+  font-family: var(--pixel); font-size: 8px;
+  color: var(--text); text-align: center;
+}
+.pcard-type { margin-top: 2px; }
+.pcard-stats {
+  font-family: var(--vt); font-size: 17px;
+  color: var(--text-dim);
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 2px 12px; width: 100%; text-align: center;
+}
+.pcard-stat-val { color: var(--text); font-size: 19px; }
+
+/* ════════════════════════════════════════════
+   MOVE SELECT
+   ════════════════════════════════════════════ */
+
+.move-select-header {
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 24px;
+  background: var(--panel);
+  border: 1px solid var(--border); border-radius: 6px;
+  margin: 0 24px 16px;
+  font-family: var(--vt); font-size: 22px;
+}
+.move-select-header .ms-sprite { font-size: 36px; }
+.move-select-header .ms-name {
+  font-family: var(--pixel); font-size: 10px; color: var(--accent);
+}
+.move-select-header .ms-stats { color: var(--text-dim); font-size: 19px; }
+
+.moves-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 12px; padding: 0 24px;
+  max-width: 900px; width: 100%;
+}
+.move-card {
+  background: var(--panel);
+  border: 2px solid var(--border); border-radius: 5px;
+  padding: 12px 10px; cursor: pointer;
+  transition: border-color 0.1s, transform 0.1s, box-shadow 0.1s;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.move-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.4); }
+.move-card.selected {
+  border-color: var(--accent2);
+  background: #1e1e10;
+  box-shadow: 0 0 12px rgba(240,208,76,.3);
+}
+.move-card-name {
+  font-family: var(--pixel); font-size: 7px;
+  color: var(--text); word-break: break-word;
+}
+.move-card-stats {
+  font-family: var(--vt); font-size: 16px;
+  color: var(--text-dim);
+  display: flex; flex-direction: column; gap: 2px;
+}
+.move-cat {
+  font-family: var(--pixel); font-size: 6px;
+  text-transform: uppercase; letter-spacing: 1px;
+}
+
+.move-confirm-bar {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  max-width: 900px; width: 100%;
+  margin-top: 10px;
+}
+.move-count-label {
+  font-family: var(--pixel); font-size: 9px; color: var(--accent2);
+}
+
+/* ════════════════════════════════════════════
+   TYPE + STATUS BADGES
+   ════════════════════════════════════════════ */
+
+.type-badge {
+  display: inline-block;
+  font-family: var(--pixel); font-size: 7px;
+  padding: 3px 7px; border-radius: 3px;
+  text-transform: uppercase; letter-spacing: 1px;
+}
+.status-badge-inner {
+  display: inline-block;
+  font-family: var(--pixel); font-size: 6px;
+  padding: 2px 6px; border-radius: 3px;
+  text-transform: uppercase; letter-spacing: 1px;
+}
+
+/* ════════════════════════════════════════════
+   BATTLE SCREEN
+   ════════════════════════════════════════════ */
+
+#screen-battle {
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 0; gap: 0;
+}
+
+.battle-arena {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 8px 12px 6px;
+  background:
+    radial-gradient(ellipse at 20% 0%,   rgba(76,240,122,.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 100%, rgba(74,130,255,.06) 0%, transparent 60%),
+    var(--bg2);
+  border-bottom: 2px solid var(--border);
+}
+
+.fighter-panel {
+  display: flex; align-items: center; gap: 14px;
+  padding: 8px 12px;
+  background: var(--panel);
+  border: 1px solid var(--border); border-radius: 6px;
+}
+.fighter-sprite {
+  font-size: 52px; line-height: 1;
+  min-width: 60px; text-align: center;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,.6));
+}
+.fighter-stats-block {
+  flex: 1; display: flex; flex-direction: column; gap: 5px;
+}
+.fighter-name-row {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.fighter-name {
+  font-family: var(--pixel); font-size: 9px; color: var(--text);
+}
+.hp-row { display: flex; align-items: center; gap: 8px; }
+.hp-label {
+  font-family: var(--pixel); font-size: 7px;
+  color: var(--text-dim); min-width: 18px;
+}
+.hp-track {
+  flex: 1; height: 10px; background: #0d1018;
+  border: 1px solid var(--border);
+  border-radius: 2px; overflow: hidden;
+}
+.hp-fill {
+  height: 100%; width: 100%;
+  background: var(--accent);
+  transition: width 0.4s ease, background 0.4s ease;
+  border-radius: 2px;
+}
+.hp-text {
+  font-family: var(--vt); font-size: 18px;
+  color: var(--text-dim); min-width: 70px; text-align: right;
+}
+.stat-row {
+  display: flex; gap: 14px;
+  font-family: var(--vt); font-size: 17px; color: var(--text-dim);
+}
+.stat-row b { color: var(--text); }
+
+.fighter-panel.shake .fighter-sprite { animation: shake 0.3s ease; }
+@keyframes shake {
+  0%,100% { transform: translateX(0);    }
+  20%      { transform: translateX(-8px); }
+  40%      { transform: translateX( 8px); }
+  60%      { transform: translateX(-5px); }
+  80%      { transform: translateX( 5px); }
+}
+
+.enemy-party-bar {
+  display: flex; gap: 8px;
+  justify-content: flex-end;
+  padding: 2px 4px;
+}
+.enemy-party-dot      { font-size: 16px; color: var(--accent); }
+.enemy-party-dot.fainted { color: var(--text-muted); }
+.enemy-party-dot.active  { color: var(--accent2);    }
+
+/* ── Battle log ───────────────────────────── */
+
+.log-container {
+  flex: 1; display: flex; flex-direction: column;
+  min-height: 0; padding: 6px 12px 4px; overflow: hidden;
+}
+.log-title {
+  font-family: var(--pixel); font-size: 7px;
+  color: var(--text-muted); margin-bottom: 4px; letter-spacing: 2px;
+}
+.battle-log {
+  flex: 1; overflow-y: auto;
+  font-family: var(--vt); font-size: 19px; line-height: 1.5;
+  background: var(--bg);
+  border: 1px solid var(--border); border-radius: 4px;
+  padding: 8px 10px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.log-line         { display: block; }
+.log-line.coin    { color: var(--accent2);    }
+.log-line.atk     { color: var(--text);       }
+.log-line.super   { color: #ff8c42;           }
+.log-line.noteff  { color: var(--text-dim);   }
+.log-line.miss    { color: var(--text-muted); font-style: italic; }
+.log-line.ko      { color: var(--danger);     }
+.log-line.start   { color: var(--accent);     }
+.log-line.noop    { color: var(--text-muted); }
+.log-line.stab    { color: #b0e060;           }
+.log-line.status  { color: #f5c518;           }
+.log-line.poison  { color: #a040c0;           }
+.log-line.burn    { color: #FF7035;           }
+.log-line.switch  { color: #4a82FF;           }
+
+/* ── Battle bottom ────────────────────────── */
+
+.battle-bottom {
+  display: flex;
+  background: var(--bg2);
+  border-top: 2px solid var(--border);
+}
+
+.move-buttons {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 8px; padding: 8px; flex: 1;
+}
+.move-btn {
+  font-family: var(--pixel); font-size: 7px;
+  background: var(--panel);
+  border: 2px solid var(--border); border-radius: 4px;
+  color: var(--text); cursor: pointer;
+  padding: 8px; text-align: left; line-height: 1.7;
+  transition: transform 0.08s, border-color 0.1s, box-shadow 0.1s;
+}
+.move-btn:hover:not(:disabled) {
+  transform: scale(1.03);
+  box-shadow: 0 0 10px rgba(255,255,255,.08);
+}
+.move-btn:active:not(:disabled) { transform: scale(0.97); }
+.move-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.move-btn .mbtn-name { display: block; margin-bottom: 3px; }
+.move-btn .mbtn-meta { display: block; font-size: 6px; color: rgba(255,255,255,.5); }
+.move-btn .mbtn-pp   { float: right; }
+
+/* ── Party switch panel ───────────────────── */
+
+.party-switch-panel {
+  width: 200px;
+  border-left: 2px solid var(--border);
+  padding: 8px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.party-label {
+  font-family: var(--pixel); font-size: 6px;
+  color: var(--text-muted); letter-spacing: 1px;
+}
+.party-slots { display: flex; flex-direction: column; gap: 4px; }
+
+.party-slot-btn {
+  background: var(--panel);
+  border: 1px solid var(--border); border-radius: 4px;
+  color: var(--text); cursor: pointer;
+  padding: 5px 8px;
+  display: grid;
+  grid-template-columns: 24px 1fr 60px 44px;
+  align-items: center; gap: 4px;
+  font-family: var(--vt); font-size: 16px;
+  transition: border-color 0.1s, background 0.1s;
+  text-align: left;
+}
+.party-slot-btn:hover:not(:disabled) {
+  border-color: var(--accent); background: #1a2010;
+}
+.party-slot-btn:disabled { cursor: default; }
+.party-slot-btn.active-slot {
+  border-color: var(--accent2); background: #1e1e10;
+}
+.party-slot-btn.fainted-slot { opacity: 0.4; }
+.party-slot-btn.force-switch {
+  border-color: var(--accent);
+  box-shadow: 0 0 14px rgba(76,240,122,.7);
+  animation: pulse 0.8s ease-in-out infinite alternate;
+}
+@keyframes pulse {
+  /* Animating the box-shadow blur radius itself forces a re-blur every
+     frame. Keeping the shadow fixed and animating opacity instead is
+     far cheaper for WebView while looking almost identical. */
+  from { opacity: 0.55; }
+  to   { opacity: 1; }
+}
+.pslot-sprite { font-size: 18px; }
+.pslot-name   { font-size: 15px; color: var(--text); overflow: hidden; white-space: nowrap; }
+.pslot-hp-track {
+  height: 5px; background: #0d1018;
+  border: 1px solid var(--border); border-radius: 2px; overflow: hidden;
+}
+.pslot-hp-fill  { height: 100%; border-radius: 2px; transition: width 0.3s ease; }
+.pslot-hp-text  { font-size: 14px; color: var(--text-dim); text-align: right; }
+
+/* ── Game over ────────────────────────────── */
+
+.game-over-overlay {
+  position: absolute; inset: 0;
+  /* backdrop-filter: blur() is a heavy convolution in WebView's software
+     renderer — a slightly darker flat overlay reads the same way here
+     since nothing behind it is animating once the game is over. */
+  background: rgba(0,0,0,.92);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 100;
+}
+.game-over-overlay.hidden { display: none; }
+.game-over-box {
+  background: var(--panel);
+  border: 3px solid var(--border); border-radius: 8px;
+  padding: 36px 40px; text-align: center;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 16px;
+  animation: goAppear 0.4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes goAppear {
+  from { transform: scale(0.7); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+.go-icon  { font-size: 64px; }
+.go-title { font-family: var(--pixel); font-size: 16px; letter-spacing: 2px; }
+.go-sub   { font-family: var(--vt); font-size: 22px; color: var(--text-dim); }
+
+/* ── Scrollbar ────────────────────────────── */
+::-webkit-scrollbar       { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ── Responsive ───────────────────────────── */
+@media (max-width: 700px) {
+  .pokemon-grid       { grid-template-columns: repeat(2, 1fr); }
+  .moves-grid         { grid-template-columns: repeat(2, 1fr); }
+  .logo-title         { font-size: 18px; }
+  .fighter-sprite     { font-size: 38px; min-width: 44px; }
+  .party-switch-panel { width: 160px; }
+}
