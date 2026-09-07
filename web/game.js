@@ -142,6 +142,8 @@ const LOG_PATTERNS = [
   { match: /not very effective/,      cls: 'noteff' },
   { match: /\[STAB\]/,                cls: 'stab'   },
   { match: /^\[ATK\]/,                cls: 'atk'    },
+  { match: /^\[STRUGGLE\]/,           cls: 'struggle' },
+  { match: /^\[RECOIL\]/,             cls: 'recoil'  },
 ];
 
 function classifyLine(line) {
@@ -485,6 +487,18 @@ function renderMoveButtons(moves, enabled) {
         <span class="mbtn-pp" style="color:${ppColor}">PP ${m.pp}/${m.maxPp}</span>
       </span>`;
   });
+  // after the moves.forEach loop
+  const allEmpty = moves.every(m => m.pp <= 0);
+  if (allEmpty && enabled) {
+      const btn = document.getElementById('mbtn-0');
+      btn.disabled = false;
+      btn.style.borderColor = '#9BA0A850';
+      btn.innerHTML = `
+          <span class="mbtn-name">STRUGGLE</span>
+          <span class="mbtn-meta">Normal &nbsp; PWR:50 &nbsp; Recoil: 25% max HP</span>`;
+      for (let i = 1; i < 4; i++)
+          document.getElementById(`mbtn-${i}`).disabled = true;
+  }
 }
 
 function renderPartySlots(party) {
