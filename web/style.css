@@ -535,3 +535,6 @@ html, body {
   .fighter-sprite     { font-size: 38px; min-width: 44px; }
   .party-switch-panel { width: 160px; }
 }
+
+.log-line.struggle { color: #c8d4f0; font-style: italic; }
+.log-line.recoil   { color: #f04c4c; }
