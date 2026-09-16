@@ -221,10 +221,12 @@ function applySwitchToSide(side, name, finalState) {
 const RE_ATK    = /^\[ATK\] (.+?)->(.+?) : .+? (\d+) dmg!/;
 const RE_PSN    = /^\[PSN\] (.+?) took (\d+) poison damage!/;
 const RE_BRN    = /^\[BRN\] (.+?) took (\d+) burn damage!/;
+const RE_STRUGGLE = /^\[STRUGGLE\] (.+?) used Struggle! \((\d+) dmg\)/;
+const RE_RECOIL   = /^\[RECOIL\] (.+?) took (\d+) recoil damage!/;
 const RE_STATUS = /^\[STATUS\] (.+?) (?:was burned|was paralysed|was poisoned|fell asleep)!/;
 const RE_WAKE   = /^\[WAKE\] (.+?) woke up!/;
 const RE_SWITCH_YOU   = /^\[SWITCH\] You sent out (.+?)!/;
-const RE_SWITCH_ENEMY = /^\[SWITCH\] Enemy Sent out (.+?)!/;
+const RE_SWITCH_ENEMY = /^\[SWITCH\] Enemy sent out (.+?)!/;
 
 function processLogLine(line, finalState) {
   let m;
@@ -268,6 +270,19 @@ function processLogLine(line, finalState) {
   if ((m = line.match(RE_SWITCH_ENEMY))) {
     applySwitchToSide('enemy', m[1], finalState);
     return;
+  }
+  if ((m = line.match(RE_STRUGGLE))) {
+    const atkSide = sideForName(m[1]);
+    if (atkSide) {
+        const defSide = atkSide === 'player' ? 'enemy' : 'player';
+        applyDamageToSide(defSide, parseInt(m[2], 10));
+    }
+    return;
+  }
+  if ((m = line.match(RE_RECOIL))) {
+      const side = sideForName(m[1]);
+      if (side) applyDamageToSide(side, parseInt(m[2], 10));
+      return;
   }
 }
 
