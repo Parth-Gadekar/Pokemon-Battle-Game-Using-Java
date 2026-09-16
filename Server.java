@@ -213,7 +213,12 @@ public class Server {
             Main.Fighter ef = g.enemy.slots[g.enemy.active];
             int em = Main.BattleEngine.EnemyPickMove();
             if (em < 0) {
-                g.log.append("[SKIP] Enemy has no PP!\n");
+                boolean ko = Main.BattleEngine.doStruggle(ef, pf);
+                if (ko) {
+                    if (Main.BattleEngine.countAlive(g.player) == 0)
+                        { g.result = -1; g.phase = Main.Phase.OVER; }
+                    else g.forceSwitch = true;
+                }
             } else {
                 boolean ko = Main.BattleEngine.doAttack(ef, pf, em);
                 if (ko) {
