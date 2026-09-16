@@ -172,7 +172,22 @@ function appendLog(rawLog, onLine, onDone) {
     const line = newLines[i++];
     const span = document.createElement('span');
     span.className   = 'log-line ' + classifyLine(line);
-    span.textContent = line;
+
+    // Split a leading [TAG] off the line and render it as a small chip,
+    // so the log reads like game text rather than a debug dump. The raw
+    // line is still what classifyLine() and processLogLine() see, so the
+    // colour coding and the animation hooks are unaffected.
+    const tag = line.match(/^\[([^\]]+)\]\s*/);
+    if (tag) {
+      const chip = document.createElement('span');
+      chip.className   = 'log-tag';
+      chip.textContent = tag[1];
+      span.appendChild(chip);
+      span.appendChild(document.createTextNode(line.slice(tag[0].length)));
+    } else {
+      span.textContent = line;
+    }
+
     logDiv.appendChild(span);
     logDiv.appendChild(document.createElement('br'));
     logDiv.scrollTop = logDiv.scrollHeight;
