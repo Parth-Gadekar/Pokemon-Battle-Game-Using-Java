@@ -591,7 +591,7 @@ body {
 .log-line.coin     { color: #7fb0ff; }
 .log-line.atk      { color: var(--ink); }
 .log-line.super    { color: var(--hp-good);  font-weight: 600; }
-.log-line.noteff   { color: #7a8299; }
+.log-line.noteff   { color: #b18c54; }
 .log-line.stab     { color: #ffd98a; }
 .log-line.ko       { color: var(--hp-bad);   font-weight: 700; }
 .log-line.miss     { color: #9aa2ba; font-style: italic; }
