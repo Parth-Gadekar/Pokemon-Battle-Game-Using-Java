@@ -132,7 +132,7 @@ public class Main {
             new Template("Emberfox", Constants.T_FIRE, 480, 90, 85, 60, 65, 95, new MoveBlueprint[]{
                 mv("Ember",        40,  Constants.T_FIRE,   100, "special",  "burn"),
                 mv("Incinerate",   60,  Constants.T_FIRE,    90, "special",  null),
-                mv("Flamethrower", 90,  Constants.T_FIRE,    85, "special",  "burn"),
+                mv("Flamethrower", 90,  Constants.T_FIRE,    85, "special",  null),
                 mv("Fire Blast",   120, Constants.T_FIRE,    70, "special",  "burn"),
                 mv("Scratch",      40,  Constants.T_NORMAL, 100, "physical", null),
                 mv("Quick Slash",  65,  Constants.T_NORMAL, 100, "physical", null),
@@ -166,8 +166,8 @@ public class Main {
 
             /* 3 — Zapwing | Electric */
             new Template("Zapwing", Constants.T_ELECTRIC, 470, 80, 95, 60, 70, 115, new MoveBlueprint[]{
-                mv("Thunder Shock",40,  Constants.T_ELECTRIC, 100, "special",  "paralysis"),
-                mv("Spark",        65,  Constants.T_ELECTRIC, 100, "physical", "paralysis"),
+                mv("Thunder Shock",40,  Constants.T_ELECTRIC, 100, "special",  null),
+                mv("Spark",        65,  Constants.T_ELECTRIC, 100, "physical", null),
                 mv("Thunderbolt",  90,  Constants.T_ELECTRIC,  90, "special",  "paralysis"),
                 mv("Thunder",      150, Constants.T_ELECTRIC,  60, "special",  "paralysis"),
                 mv("Quick Attack", 40,  Constants.T_NORMAL,   100, "physical", null),
