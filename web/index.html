@@ -29,6 +29,7 @@
     <div class="mode-buttons">
       <button class="btn-pixel btn-primary" id="btn-mode-3v3">▶ 3 VS 3</button>
       <button class="btn-pixel btn-primary" id="btn-mode-1v1">▶ 1 VS 1</button>
+      <button class="btn-pixel btn-primary" id="btn-mode-pvp">▶ Pass and Play</button>
     </div>
   </div>
 </div>
@@ -179,7 +180,14 @@
   </div>
 
 </div>
-
+<div class="pass-overlay hidden" id="pass-overlay">
+  <div class="game-over-box">
+    <div class="go-icon">🔁</div>
+    <div class="go-title" id="pass-title">PLAYER 2</div>
+    <div class="go-sub"   id="pass-sub"></div>
+    <button class="btn-pixel btn-primary" id="btn-pass-ready">I'm ready</button>
+  </div>
+</div>
 <script src="game.js"></script>
 </body>
 </html>

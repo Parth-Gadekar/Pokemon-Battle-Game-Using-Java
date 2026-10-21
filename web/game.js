@@ -50,6 +50,8 @@ let selectedMoveIds = new Set();
 let busy            = false;
 let lastLogLen      = 0;
 let teamSize        = 3;
+let pvp = false, pickingP2 = false, p1Pick = null;
+let pvpStage = 1, p1Move = null, lastState = null, passCallback = null;
 
 // What's currently shown on screen for each side, kept in sync line-by-line
 // as the battle log plays out, so HP drains / shakes happen exactly when
@@ -119,6 +121,18 @@ function setHpBar(fillId, textId, hp, max) {
 function setButtonsEnabled(enabled) {
   document.querySelectorAll('.move-btn').forEach(b => b.disabled = !enabled);
 }
+
+function showPass(title, sub, onReady) {
+  document.getElementById('pass-title').textContent = title;
+  document.getElementById('pass-sub').textContent   = sub;
+  document.getElementById('pass-overlay').classList.remove('hidden');
+  passCallback = onReady;
+}
+document.getElementById('btn-pass-ready').addEventListener('click', () => {
+  document.getElementById('pass-overlay').classList.add('hidden');
+  const cb = passCallback; passCallback = null;
+  if (cb) cb();
+});
 
 /* ═══════════════════════════════════════════
    LOG — ANIMATED LINE BY LINE
@@ -306,7 +320,8 @@ function processLogLine(line, finalState) {
    SCREEN 1 — WELCOME
    ═══════════════════════════════════════════ */
 
-async function startNewGame(size) {
+async function startNewGame(size, isPvp = false) {
+  pvp = isPvp; pickingP2 = false; p1Pick = null; pvpStage = 1; p1Move = null;
   teamSize        = size;
   allPokemon      = await api('GET', '/api/pokemon');
   team            = [null, null, null];
@@ -317,6 +332,7 @@ async function startNewGame(size) {
   renderPokemonSelect();
   showScreen('screen-pokemon');
 }
+document.getElementById('btn-mode-pvp').addEventListener('click', () => startNewGame(1, true));
 document.getElementById('btn-mode-3v3').addEventListener('click', () => startNewGame(3));
 document.getElementById('btn-mode-1v1').addEventListener('click', () => startNewGame(1));
 
@@ -325,7 +341,7 @@ document.getElementById('btn-mode-1v1').addEventListener('click', () => startNew
    ═══════════════════════════════════════════ */
 
 function renderPokemonSelect() {
-  document.getElementById('team-slot-label').textContent = `Pick Pokemon ${currentSlot + 1} of ${teamSize}`;
+  document.getElementById('team-slot-label').textContent = pvp ? `Player ${pickingP2 ? 2 : 1}: choose your Pokemon`: `Pick Pokemon ${currentSlot + 1} of ${teamSize}`;
 
   // team preview circles
   const preview    = document.getElementById('team-preview');
@@ -443,19 +459,39 @@ document.getElementById('btn-confirm-moves').addEventListener('click', async () 
   if (currentSlot < teamSize) {
     renderPokemonSelect();
     showScreen('screen-pokemon');
+    return;
+  }
+
+  // PvP: Player 1 is done, hand over to Player 2
+  if (pvp && !pickingP2) {
+    p1Pick    = { pid: team[0].pid, moves: teamMoves[0] };
+    pickingP2 = true;
+    team = [null, null, null]; teamMoves = [[], [], []]; currentSlot = 0;
+    showPass('PLAYER 2', 'Pass the device to Player 2. Player 1, look away!', () => {
+      renderPokemonSelect();
+      showScreen('screen-pokemon');
+    });
+    return;
+  }
+
+  const body = { mode: teamSize };
+  if (pvp) {
+    body.pvp    = 1;
+    body.pid0   = p1Pick.pid;    body.moves0   = p1Pick.moves;
+    body.p2pid0 = team[0].pid;   body.p2moves0 = teamMoves[0];
   } else {
-    const body = { mode: teamSize };
     for (let i = 0; i < teamSize; i++) {
       body['pid' + i]   = team[i].pid;
       body['moves' + i] = teamMoves[i];
     }
-    await api('POST', '/api/start', body);
-    const state = await api('GET', '/api/state');
-    clearLog();
-    document.getElementById('screen-battle').classList.toggle('solo', teamSize === 1);
-    showScreen('screen-battle');
-    initBattle(state);
   }
+  await api('POST', '/api/start', body);
+  const state = await api('GET', '/api/state');
+  clearLog();
+  document.getElementById('screen-battle').classList.toggle('solo', teamSize === 1);
+  showScreen('screen-battle');
+  if (pvp) showPass('PLAYER 1', 'Pass the device to Player 1. Battle starts!', () => initBattle(state));
+  else     initBattle(state);
 });
 
 /* ═══════════════════════════════════════════
@@ -465,6 +501,7 @@ document.getElementById('btn-confirm-moves').addEventListener('click', async () 
 function initBattle(state) {
   const pActive = state.player.slots[state.player.active];
   const eActive = state.enemy.slots[state.enemy.active];
+  lastState = state;
 
   display.player = { name: pActive.name, hp: pActive.hp, maxHp: pActive.maxHp, status: pActive.status };
   display.enemy  = { name: eActive.name, hp: eActive.hp, maxHp: eActive.maxHp, status: eActive.status };
@@ -626,15 +663,14 @@ function shakePanel(side) {
 }
 
 function showGameOver(state) {
-  const overlay = document.getElementById('game-over-overlay');
-  overlay.classList.remove('hidden');
+  document.getElementById('game-over-overlay').classList.remove('hidden');
   const won = state.result === 1;
-  document.getElementById('go-icon').textContent  = won ? '🏆' : '💀';
-  document.getElementById('go-title').textContent = won ? 'VICTORY!' : 'DEFEATED!';
-  document.getElementById('go-title').style.color = won ? '#4cf07a' : '#f04c4c';
-  document.getElementById('go-sub').textContent   = won
-    ? 'You defeated the enemy team!'
-    : 'Your team was defeated!';
+  document.getElementById('go-icon').textContent  = (pvp || won) ? '🏆' : '💀';
+  document.getElementById('go-title').textContent = pvp ? (won ? 'PLAYER 1 WINS!' : 'PLAYER 2 WINS!')
+                                                        : (won ? 'VICTORY!' : 'DEFEATED!');
+  document.getElementById('go-title').style.color = (pvp || won) ? '#4cf07a' : '#f04c4c';
+  document.getElementById('go-sub').textContent   = pvp ? 'Good fight!'
+    : (won ? 'You defeated the enemy team!' : 'Your team was defeated!');
 }
 
 /* ── Move button clicks ──────────────────────── */
@@ -646,8 +682,20 @@ document.querySelectorAll('.move-btn').forEach(btn => {
     setButtonsEnabled(false);
 
     const mi = parseInt(btn.dataset.index, 10);
-    await api('POST', '/api/move', { move_index: mi });
+    if (pvp && pvpStage === 1) {
+        p1Move   = mi;
+        pvpStage = 2;
+        showPass('PLAYER 2', 'Pass the device to Player 2. Player 1, look away!', () => {
+          renderMoveButtons(lastState.enemy.slots[lastState.enemy.active].moves, true);
+          busy = false;
+        });
+        return;
+      }
+    
+    const moveBody = pvp ? { move_index: p1Move, move_index2: mi } : { move_index: mi };
+    await api('POST', '/api/move', moveBody);
     const state = await api('GET', '/api/state');
+    lastState = state; pvpStage = 1;
 
     appendLog(state.log, line => processLogLine(line, state), () => {
       // Final sync: guarantees the display exactly matches server truth
@@ -666,7 +714,15 @@ document.querySelectorAll('.move-btn').forEach(btn => {
       } else if (state.forceSwitch) {
         showForceSwitchUI();
         busy = false;
-      } else {
+      } 
+      else if (pvp) {
+        renderMoveButtons(pActive.moves, false);
+        setTimeout(() => showPass('PLAYER 1', 'Round over. Hand the device to Player 1.', () => {
+          renderMoveButtons(pActive.moves, true);
+          busy = false;
+        }), 1200);
+      } 
+      else {
         renderMoveButtons(pActive.moves, true);
         busy = false;
       }

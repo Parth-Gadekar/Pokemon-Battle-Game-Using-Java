@@ -125,6 +125,8 @@ public class Server {
 
         int size = jsonGetInt(body, "mode", 3);
         if (size != 1) size = 3;
+        boolean pvp = jsonGetInt(body, "pvp", 0) == 1;
+        if (pvp) size = 1;
 
         int[] pids    = new int[size];
         int[][] moves = new int[size][Main.Constants.MOVES_BATTLE];
@@ -146,10 +148,21 @@ public class Server {
             used[ep] = true; epids[i] = ep;
         }
 
+
+        int[] p2moves = {0, 1, 2, 3};
+        if (pvp) {
+            epids[0] = jsonGetInt(body, "p2pid0", 0);
+            if (epids[0] < 0 || epids[0] >= Main.Constants.NUM_CREATURE) epids[0] = 0;
+            jsonGetArr4(body, "p2moves0", p2moves);
+            for (int j = 0; j < 4; j++)
+                if (p2moves[j] < 0 || p2moves[j] >= Main.Constants.MOVES_TOTAL) p2moves[j] = j;
+        }
+
         Main.Game.reset();
         Main.Game g = Main.Game.get();
         g.player = new Main.Party(size);
         g.enemy  = new Main.Party(size);
+        g.pvp    = pvp;
 
         for (int i = 0; i < size; i++) {
             g.player.slots[i] = Main.FighterFactory.create(pids[i], moves[i]);
@@ -158,7 +171,7 @@ public class Server {
                 int k = (int)(Math.random() * (j + 1));
                 int tmp = shuffle[j]; shuffle[j] = shuffle[k]; shuffle[k] = tmp;
             }
-            int[] emoves = {shuffle[0], shuffle[1], shuffle[2], shuffle[3]};
+            int[] emoves = pvp ? p2moves : new int[]{shuffle[0], shuffle[1], shuffle[2], shuffle[3]};
             g.enemy.slots[i] = Main.FighterFactory.create(epids[i], emoves);
         }
 
@@ -186,7 +199,15 @@ public class Server {
             String body = new String(ex.getRequestBody().readAllBytes());
             int mi = jsonGetInt(body, "move_index", 0);
             if (mi < 0 || mi >= Main.Constants.MOVES_BATTLE) mi = 0;
-            Main.BattleEngine.processRound(mi);
+            if (g.pvp) {
+                Main.Fighter ef = g.enemy.slots[g.enemy.active];
+                int mi2 = jsonGetInt(body, "move_index2", 0);
+                if (Main.BattleEngine.allPpEmpty(ef)) mi2 = -1;   // P2 must Struggle
+                else if (mi2 < 0 || mi2 >= Main.Constants.MOVES_BATTLE) mi2 = 0;
+                Main.BattleEngine.processRound(mi, mi2);
+            } else {
+                Main.BattleEngine.processRound(mi);
+            }
             respond(ex, 200, "application/json", "{\"ok\":true}");
         }
 

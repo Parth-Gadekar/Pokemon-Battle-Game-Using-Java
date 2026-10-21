@@ -118,6 +118,7 @@ public class Main {
         Party         enemy       = new Party();
         int           result      = 0;
         boolean       forceSwitch = false;
+        boolean       pvp         = false;
         StringBuilder log         = new StringBuilder();
 
         private static Game instance;
@@ -418,11 +419,16 @@ public class Main {
         }
 
         // ── Main round logic
-        static void processRound(int playerMi) {
+       static final int CPU_PICK = -2;   // "let the CPU choose"
+
+        static void processRound(int playerMi) { processRound(playerMi, CPU_PICK); }
+
+        static void processRound(int playerMi, int enemyMi) {
             Game    g  = Game.get();
             Fighter pf = g.player.slots[g.player.active];
             Fighter ef = g.enemy.slots[g.enemy.active];
-            int     em = EnemyPickMove();
+            boolean cpu = (enemyMi == CPU_PICK);
+            int     em  = cpu ? EnemyPickMove() : enemyMi;
 
             boolean playerFirst = pf.speed > ef.speed ||
                                   (pf.speed == ef.speed && Math.random() < 0.5);
@@ -454,7 +460,7 @@ public class Main {
                 }
 
                 // ── Enemy attacks second
-                em = EnemyPickMove();
+                if (cpu) em = EnemyPickMove();
                 if (em < 0) {
                     // FIX: enemy struggles instead of skipping
                     if (doStruggle(ef, pf)) {

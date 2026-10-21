@@ -806,3 +806,10 @@ body {
   display: flex;
   gap: 20px;
 }
+
+.pass-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+}
+.pass-overlay.hidden { display: none; }
