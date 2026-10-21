@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pokemon Lite</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="scanlines"></div>
+
+<!-- ══ SCREEN 1: WELCOME ══════════════════════════════════════ -->
+<div class="screen active" id="screen-welcome">
+  <div class="welcome-wrap">
+    <div class="logo-area">
+      <div class="logo-sprite">⚔️</div>
+      <div class="logo-title">POKEMON<br>LITE</div>
+      <div class="logo-sub">OOP EDITION</div>
+    </div>
+    <div class="legend">
+      <span>Pick 3 Pokemon</span>
+      <span>Choose 4 moves each</span>
+      <span>Battle to win</span>
+    </div>
+    <div class="mode-buttons">
+      <button class="btn-pixel btn-primary" id="btn-mode-3v3">▶ 3 VS 3</button>
+      <button class="btn-pixel btn-primary" id="btn-mode-1v1">▶ 1 VS 1</button>
+      <button class="btn-pixel btn-primary" id="btn-mode-pvp">▶ Pass and Play</button>
+      <button class="btn-pixel btn-primary" id="btn-mode-host">📡 Host LAN Game</button>
+      <button class="btn-pixel btn-primary" id="btn-mode-join">🔗 Join LAN Game</button>
+    </div>
+    <div class="lan-msg" id="lan-msg"></div>
+  </div>
+</div>
+
+<!-- ══ SCREEN 1b: MODE SELECT ═════════════════════════════════
+     Not in the flow yet — nothing here is wired up.
+     To enable it once the server understands modes:
+       1. In game.js, change the #btn-new-game handler to call
+          showScreen('screen-mode') instead of loading the roster.
+       2. Add a handler for .mode-card clicks that stores
+          card.dataset.mode, then runs the existing roster-load
+          and showScreen('screen-pokemon') code.
+       3. Send that mode along in the POST /api/start body.
+     ════════════════════════════════════════════════════════ -->
+<div class="screen" id="screen-mode">
+  <div class="screen-header">
+    <div class="screen-title">CHOOSE A MODE</div>
+    <div class="screen-sub">How do you want to battle?</div>
+  </div>
+  <div class="pokemon-grid" id="mode-grid">
+    <div class="pokemon-card mode-card" data-mode="cpu_1v1">
+      <div class="pcard-sprite">🎯</div>
+      <div class="pcard-name">Single</div>
+      <div class="pcard-stats"><span>One Pokemon each, against the computer.</span></div>
+    </div>
+    <div class="pokemon-card mode-card" data-mode="cpu_3v3">
+      <div class="pcard-sprite">🛡️</div>
+      <div class="pcard-name">Full team</div>
+      <div class="pcard-stats"><span>Three Pokemon each, against the computer.</span></div>
+    </div>
+    <div class="pokemon-card mode-card" data-mode="pvp_1v1">
+      <div class="pcard-sprite">👥</div>
+      <div class="pcard-name">Two players</div>
+      <div class="pcard-stats"><span>Share a link and battle a friend.</span></div>
+    </div>
+    <div class="pokemon-card mode-card" data-mode="random">
+      <div class="pcard-sprite">🎲</div>
+      <div class="pcard-name">Random</div>
+      <div class="pcard-stats"><span>Random team, random moves, straight into battle.</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SCREEN 2: POKEMON SELECT ═══════════════════════════════ -->
+<div class="screen" id="screen-pokemon">
+  <div class="screen-header">
+    <div class="screen-title">BUILD YOUR TEAM</div>
+    <div class="screen-sub" id="team-slot-label">Pick Pokemon 1 of 3</div>
+    <div class="team-preview" id="team-preview"></div>
+  </div>
+  <div class="pokemon-grid" id="pokemon-grid"></div>
+</div>
+
+<!-- ══ SCREEN 3: MOVE SELECT ══════════════════════════════════ -->
+<div class="screen" id="screen-moves">
+  <div class="screen-header">
+    <div class="screen-title">CHOOSE MOVES</div>
+    <div class="screen-sub">Pick exactly four</div>
+  </div>
+  <div class="move-select-header" id="move-select-pokemon-info"></div>
+  <div class="moves-grid" id="moves-grid"></div>
+  <div class="move-confirm-bar">
+    <span class="move-count-label" id="move-count-label">0 / 4 selected</span>
+    <button class="btn-pixel btn-primary" id="btn-confirm-moves" disabled>Confirm</button>
+  </div>
+</div>
+
+<!-- ══ SCREEN 4: BATTLE ═══════════════════════════════════════ -->
+<div class="screen" id="screen-battle">
+
+  <div class="battle-arena">
+
+    <!-- Enemy: HUD box on the left, sprite on the right.
+         CSS reverses the flex direction, so the markup order
+         (sprite first) stays identical for both sides. -->
+    <div class="fighter-panel" id="enemy-panel">
+      <div class="fighter-sprite enemy-sprite" id="enemy-sprite">❓</div>
+      <div class="fighter-stats-block">
+        <div class="fighter-name-row">
+          <span class="fighter-name" id="enemy-name">---</span>
+          <span class="type-badge"   id="enemy-type-badge"></span>
+          <span class="status-badge" id="enemy-status-badge"></span>
+        </div>
+        <div class="hp-row">
+          <span class="hp-label">HP</span>
+          <div class="hp-track"><div class="hp-fill" id="enemy-hp-fill"></div></div>
+          <span class="hp-text" id="enemy-hp-text">--- / ---</span>
+        </div>
+        <div class="stat-row">
+          <span>ATK <b id="enemy-atk">--</b></span>
+          <span>DEF <b id="enemy-def">--</b></span>
+          <span>SPD <b id="enemy-spd">--</b></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Player: sprite on the left, HUD box on the right. -->
+    <div class="fighter-panel" id="player-panel">
+      <div class="fighter-sprite player-sprite" id="player-sprite">❓</div>
+      <div class="fighter-stats-block">
+        <div class="fighter-name-row">
+          <span class="fighter-name" id="player-name">---</span>
+          <span class="type-badge"   id="player-type-badge"></span>
+          <span class="status-badge" id="player-status-badge"></span>
+        </div>
+        <div class="hp-row">
+          <span class="hp-label">HP</span>
+          <div class="hp-track"><div class="hp-fill" id="player-hp-fill"></div></div>
+          <span class="hp-text" id="player-hp-text">--- / ---</span>
+        </div>
+        <div class="stat-row">
+          <span>ATK <b id="player-atk">--</b></span>
+          <span>DEF <b id="player-def">--</b></span>
+          <span>SPD <b id="player-spd">--</b></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="enemy-party-bar" id="enemy-party-bar"></div>
+
+  </div>
+
+  <div class="log-container">
+    <div class="log-title">BATTLE LOG</div>
+    <div class="battle-log" id="battle-log"></div>
+  </div>
+
+  <div class="battle-bottom">
+    <div class="move-buttons">
+      <button class="move-btn" id="mbtn-0" data-index="0">—</button>
+      <button class="move-btn" id="mbtn-1" data-index="1">—</button>
+      <button class="move-btn" id="mbtn-2" data-index="2">—</button>
+      <button class="move-btn" id="mbtn-3" data-index="3">—</button>
+    </div>
+    <div class="party-switch-panel">
+      <div class="party-label">YOUR PARTY</div>
+      <div class="party-slots" id="player-party-slots"></div>
+    </div>
+  </div>
+
+  <div class="game-over-overlay hidden" id="game-over-overlay">
+    <div class="game-over-box">
+      <div class="go-icon"  id="go-icon">🏆</div>
+      <div class="go-title" id="go-title">VICTORY!</div>
+      <div class="go-sub"   id="go-sub"></div>
+      <button class="btn-pixel btn-primary" id="btn-play-again">Play again</button>
+    </div>
+  </div>
+
+</div>
+<div class="pass-overlay hidden" id="pass-overlay">
+  <div class="game-over-box">
+    <div class="go-icon">🔁</div>
+    <div class="go-title" id="pass-title">PLAYER 2</div>
+    <div class="go-sub"   id="pass-sub"></div>
+    <button class="btn-pixel btn-primary" id="btn-pass-ready">I'm ready</button>
+  </div>
+</div>
+<div class="pass-overlay hidden" id="lobby-overlay">
+  <div class="game-over-box">
+    <div class="go-icon"  id="lobby-icon">📡</div>
+    <div class="go-title" id="lobby-title">WAITING</div>
+    <div class="go-sub"   id="lobby-sub"></div>
+    <button class="btn-pixel btn-primary" id="btn-lobby-action">Cancel</button>
+  </div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>
