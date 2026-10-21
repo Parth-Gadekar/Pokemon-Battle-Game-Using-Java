@@ -799,3 +799,10 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+#screen-battle.solo .party-switch-panel,
+#screen-battle.solo .enemy-party-bar { display: none; }
+.mode-buttons {
+  display: flex;
+  gap: 20px;
+}

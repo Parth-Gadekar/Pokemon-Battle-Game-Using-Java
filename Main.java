@@ -100,8 +100,15 @@ public class Main {
 
     // ─── PARTY ───────────────────────────────────────────────────
     static class Party {
-        Fighter[] slots = new Fighter[Constants.PARTY_SIZE];
+        Fighter[] slots;
         int active = 0;
+
+        Party(int size) {
+            slots = new Fighter[size];
+        }
+        Party(){
+            this(Constants.PARTY_SIZE);
+        }
     }
 
     // ─── GAME SINGLETON ──────────────────────────────────────────
@@ -392,7 +399,7 @@ public class Main {
         static void enemyAutoSwitch() {
             Game  g  = Game.get();
             Party ep = g.enemy;
-            for (int i = 0; i < Constants.PARTY_SIZE; i++) {
+            for (int i = 0; i < ep.slots.length; i++) {
                 if (i != ep.active && ep.slots[i] != null && ep.slots[i].hp > 0) {
                     ep.active = i;
                     appendLog("[SWITCH] Enemy sent out " + ep.slots[i].name + "!\n");

@@ -123,10 +123,13 @@ public class Server {
         }
         String body = new String(ex.getRequestBody().readAllBytes());
 
-        int[] pids    = new int[Main.Constants.PARTY_SIZE];
-        int[][] moves = new int[Main.Constants.PARTY_SIZE][Main.Constants.MOVES_BATTLE];
+        int size = jsonGetInt(body, "mode", 3);
+        if (size != 1) size = 3;
 
-        for (int i = 0; i < Main.Constants.PARTY_SIZE; i++) {
+        int[] pids    = new int[size];
+        int[][] moves = new int[size][Main.Constants.MOVES_BATTLE];
+
+        for (int i = 0; i < size; i++) {
             pids[i] = jsonGetInt(body, "pid" + i, i % Main.Constants.NUM_CREATURE);
             if (pids[i] < 0 || pids[i] >= Main.Constants.NUM_CREATURE) pids[i] = i % Main.Constants.NUM_CREATURE;
             int[] tmp = {0, 1, 2, 3};
@@ -135,10 +138,9 @@ public class Server {
                 moves[i][j] = (tmp[j] < 0 || tmp[j] >= Main.Constants.MOVES_TOTAL) ? j : tmp[j];
         }
 
-        // random enemy team, no duplicates
         boolean[] used = new boolean[Main.Constants.NUM_CREATURE];
-        int[] epids = new int[Main.Constants.PARTY_SIZE];
-        for (int i = 0; i < Main.Constants.PARTY_SIZE; i++) {
+        int[] epids = new int[size];
+        for (int i = 0; i < size; i++) {
             int ep;
             do { ep = (int)(Math.random() * Main.Constants.NUM_CREATURE); } while (used[ep]);
             used[ep] = true; epids[i] = ep;
@@ -146,8 +148,10 @@ public class Server {
 
         Main.Game.reset();
         Main.Game g = Main.Game.get();
+        g.player = new Main.Party(size);
+        g.enemy  = new Main.Party(size);
 
-        for (int i = 0; i < Main.Constants.PARTY_SIZE; i++) {
+        for (int i = 0; i < size; i++) {
             g.player.slots[i] = Main.FighterFactory.create(pids[i], moves[i]);
             int[] shuffle = {0,1,2,3,4,5,6,7};
             for (int j = Main.Constants.MOVES_TOTAL - 1; j > 0; j--) {
@@ -162,74 +166,69 @@ public class Server {
         g.enemy.active  = 0;
         g.phase = Main.Phase.BATTLE;
         g.log.append("[START] Battle begins: ")
-             .append(g.player.slots[0].name)
-             .append(" VS ")
-             .append(g.enemy.slots[0].name)
-             .append("!\n");
+            .append(g.player.slots[0].name)
+            .append(" VS ")
+            .append(g.enemy.slots[0].name)
+            .append("!\n");
 
         respond(ex, 200, "application/json", "{\"ok\":true}");
     }
 
     // ─── POST /api/move ──────────────────────────────────────────
-    static void handlePostMove(HttpExchange ex) throws IOException {
-        if (!ex.getRequestMethod().equals("POST")) {
-            respond(ex, 405, "application/json", "{\"error\":\"Method not allowed\"}"); return;
-        }
-        Main.Game g = Main.Game.get();
-        if (g.phase != Main.Phase.BATTLE || g.forceSwitch) {
-            respond(ex, 400, "application/json", "{\"error\":\"Cannot use move now\"}"); return;
-        }
-        String body = new String(ex.getRequestBody().readAllBytes());
-        int mi = jsonGetInt(body, "move_index", 0);
-        if (mi < 0 || mi >= Main.Constants.MOVES_BATTLE) mi = 0;
-        Main.BattleEngine.processRound(mi);
-        respond(ex, 200, "application/json", "{\"ok\":true}");
-    }
-
-    // ─── POST /api/switch ────────────────────────────────────────
-    static void handlePostSwitch(HttpExchange ex) throws IOException {
-        if (!ex.getRequestMethod().equals("POST")) {
-            respond(ex, 405, "application/json", "{\"error\":\"Method not allowed\"}"); return;
-        }
-        Main.Game g = Main.Game.get();
-        if (g.phase != Main.Phase.BATTLE) {
-            respond(ex, 400, "application/json", "{\"error\":\"Not in battle\"}"); return;
-        }
-        String body = new String(ex.getRequestBody().readAllBytes());
-        int slot = jsonGetInt(body, "slot", -1);
-        if (slot < 0 || slot >= Main.Constants.PARTY_SIZE
-                || slot == g.player.active
-                || g.player.slots[slot].hp <= 0) {
-            respond(ex, 400, "application/json", "{\"error\":\"Invalid switch\"}"); return;
+        static void handlePostMove(HttpExchange ex) throws IOException {
+            if (!ex.getRequestMethod().equals("POST")) {
+                respond(ex, 405, "application/json", "{\"error\":\"Method not allowed\"}"); return;
+            }
+            Main.Game g = Main.Game.get();
+            if (g.phase != Main.Phase.BATTLE || g.forceSwitch) {
+                respond(ex, 400, "application/json", "{\"error\":\"Cannot use move now\"}"); return;
+            }
+            String body = new String(ex.getRequestBody().readAllBytes());
+            int mi = jsonGetInt(body, "move_index", 0);
+            if (mi < 0 || mi >= Main.Constants.MOVES_BATTLE) mi = 0;
+            Main.BattleEngine.processRound(mi);
+            respond(ex, 200, "application/json", "{\"ok\":true}");
         }
 
-        boolean wasForced = g.forceSwitch;
-        g.player.active = slot;
-        g.forceSwitch   = false;
-        g.log.append("[SWITCH] You sent out ").append(g.player.slots[slot].name).append("!\n");
+        // ─── POST /api/switch ────────────────────────────────────────
+        static void handlePostSwitch(HttpExchange ex) throws IOException {
+            if (!ex.getRequestMethod().equals("POST")) {
+                respond(ex, 405, "application/json", "{\"error\":\"Method not allowed\"}"); return;
+            }
+            Main.Game g = Main.Game.get();
+            if (g.phase != Main.Phase.BATTLE) {
+                respond(ex, 400, "application/json", "{\"error\":\"Not in battle\"}"); return;
+            }
+            String body = new String(ex.getRequestBody().readAllBytes());
+            int slot = jsonGetInt(body, "slot", -1);
+            if (slot < 0 || slot >= g.player.slots.length
+                    || slot == g.player.active
+                    || g.player.slots[slot].hp <= 0) {
+                respond(ex, 400, "application/json", "{\"error\":\"Invalid switch\"}"); return;
+            }
 
-        if (!wasForced) {
-            Main.Fighter pf = g.player.slots[g.player.active];
-            Main.Fighter ef = g.enemy.slots[g.enemy.active];
-            int em = Main.BattleEngine.EnemyPickMove();
-            if (em < 0) {
-                boolean ko = Main.BattleEngine.doStruggle(ef, pf);
+            boolean wasForced = g.forceSwitch;
+            g.player.active = slot;
+            g.forceSwitch   = false;
+            g.log.append("[SWITCH] You sent out ").append(g.player.slots[slot].name).append("!\n");
+
+            // voluntary switch costs a turn: enemy gets a free attack
+            if (!wasForced) {
+                Main.Fighter pf = g.player.slots[g.player.active];
+                Main.Fighter ef = g.enemy.slots[g.enemy.active];
+                int em = Main.BattleEngine.EnemyPickMove();
+                boolean ko = (em < 0) ? Main.BattleEngine.doStruggle(ef, pf)
+                                    : Main.BattleEngine.doAttack(ef, pf, em);
                 if (ko) {
-                    if (Main.BattleEngine.countAlive(g.player) == 0)
-                        { g.result = -1; g.phase = Main.Phase.OVER; }
+                    if (Main.BattleEngine.countAlive(g.player) == 0) { g.result = -1; g.phase = Main.Phase.OVER; }
                     else g.forceSwitch = true;
-                }
-            } else {
-                boolean ko = Main.BattleEngine.doAttack(ef, pf, em);
-                if (ko) {
-                    if (Main.BattleEngine.countAlive(g.player) == 0)
-                        { g.result = -1; g.phase = Main.Phase.OVER; }
-                    else g.forceSwitch = true;
+                } else if (ef.hp == 0) {   // enemy died from Struggle recoil
+                    if (Main.BattleEngine.countAlive(g.enemy) == 0) { g.result = 1; g.phase = Main.Phase.OVER; }
+                    else Main.BattleEngine.enemyAutoSwitch();
                 }
             }
+            respond(ex, 200, "application/json", "{\"ok\":true}");
         }
-        respond(ex, 200, "application/json", "{\"ok\":true}");
-    }
 
     // ─── POST /api/reset ─────────────────────────────────────────
     static void handlePostReset(HttpExchange ex) throws IOException {
@@ -273,7 +272,7 @@ public class Server {
     static String partyToJson(Main.Party party) {
         StringBuilder sb = new StringBuilder();
         sb.append("{\"active\":").append(party.active).append(",\"slots\":[");
-        for (int i = 0; i < Main.Constants.PARTY_SIZE; i++) {
+        for (int i = 0; i < party.slots.length; i++) {
             if (i > 0) sb.append(",");
             if (party.slots[i] == null) { sb.append("null"); continue; }
             sb.append(fighterToJson(party.slots[i]));

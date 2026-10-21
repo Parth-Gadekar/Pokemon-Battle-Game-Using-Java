@@ -49,6 +49,7 @@ let selectedPkmnId  = null;
 let selectedMoveIds = new Set();
 let busy            = false;
 let lastLogLen      = 0;
+let teamSize        = 3;
 
 // What's currently shown on screen for each side, kept in sync line-by-line
 // as the battle log plays out, so HP drains / shakes happen exactly when
@@ -305,7 +306,8 @@ function processLogLine(line, finalState) {
    SCREEN 1 — WELCOME
    ═══════════════════════════════════════════ */
 
-document.getElementById('btn-new-game').addEventListener('click', async () => {
+async function startNewGame(size) {
+  teamSize        = size;
   allPokemon      = await api('GET', '/api/pokemon');
   team            = [null, null, null];
   teamMoves       = [[], [], []];
@@ -314,19 +316,21 @@ document.getElementById('btn-new-game').addEventListener('click', async () => {
   selectedMoveIds = new Set();
   renderPokemonSelect();
   showScreen('screen-pokemon');
-});
+}
+document.getElementById('btn-mode-3v3').addEventListener('click', () => startNewGame(3));
+document.getElementById('btn-mode-1v1').addEventListener('click', () => startNewGame(1));
 
 /* ═══════════════════════════════════════════
    SCREEN 2 — POKEMON SELECT
    ═══════════════════════════════════════════ */
 
 function renderPokemonSelect() {
-  document.getElementById('team-slot-label').textContent = `Pick Pokemon ${currentSlot + 1} of 3`;
+  document.getElementById('team-slot-label').textContent = `Pick Pokemon ${currentSlot + 1} of ${teamSize}`;
 
   // team preview circles
   const preview    = document.getElementById('team-preview');
   const pickedIds  = team.filter(Boolean).map(t => t.pid);
-  preview.innerHTML = team.map((t, i) => {
+  preview.innerHTML = team.slice(0, teamSize).map((t, i) => {
     const filled = t !== null;
     const name   = filled ? allPokemon[t.pid].name : '';
     return `<span class="team-preview-slot ${filled ? 'filled' : ''}">${filled ? sprite(name) : (i === currentSlot ? '▸' : '?')}</span>`;
@@ -432,25 +436,23 @@ function updateMoveCount() {
 document.getElementById('btn-confirm-moves').addEventListener('click', async () => {
   if (selectedMoveIds.size !== 4) return;
 
-  // save this slot
   team[currentSlot]      = { pid: selectedPkmnId };
   teamMoves[currentSlot] = [...selectedMoveIds];
   currentSlot++;
 
-  if (currentSlot < 3) {
-    // still more pokemon to pick
+  if (currentSlot < teamSize) {
     renderPokemonSelect();
     showScreen('screen-pokemon');
   } else {
-    // all 3 picked — send to server and start battle
-    const body = {
-      pid0: team[0].pid,  moves0: teamMoves[0],
-      pid1: team[1].pid,  moves1: teamMoves[1],
-      pid2: team[2].pid,  moves2: teamMoves[2],
-    };
+    const body = { mode: teamSize };
+    for (let i = 0; i < teamSize; i++) {
+      body['pid' + i]   = team[i].pid;
+      body['moves' + i] = teamMoves[i];
+    }
     await api('POST', '/api/start', body);
     const state = await api('GET', '/api/state');
     clearLog();
+    document.getElementById('screen-battle').classList.toggle('solo', teamSize === 1);
     showScreen('screen-battle');
     initBattle(state);
   }
