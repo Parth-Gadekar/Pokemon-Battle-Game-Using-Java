@@ -53,6 +53,12 @@ let teamSize        = 3;
 let pvp = false, pickingP2 = false, p1Pick = null;
 let pvpStage = 1, p1Move = null, lastState = null, passCallback = null;
 
+// LAN multiplayer: the server holds both picks and resolves a round once
+// the second one arrives; each browser just polls /api/state for its own view.
+let lan = false, lanRole = null, lanToken = null, lanSeat = 0;
+let lanTimer = null, lanTicking = false, lanAnimating = false;
+let lanStarted = false, lanRound = 0, lanAwayShown = false, lobbyAction = null;
+
 // What's currently shown on screen for each side, kept in sync line-by-line
 // as the battle log plays out, so HP drains / shakes happen exactly when
 // their log line appears instead of all at once up front.
@@ -320,7 +326,9 @@ function processLogLine(line, finalState) {
    SCREEN 1 — WELCOME
    ═══════════════════════════════════════════ */
 
-async function startNewGame(size, isPvp = false) {
+async function startNewGame(size, isPvp = false, role = null) {
+  lanStop();
+  lan = role !== null; lanRole = role;
   pvp = isPvp; pickingP2 = false; p1Pick = null; pvpStage = 1; p1Move = null;
   teamSize        = size;
   allPokemon      = await api('GET', '/api/pokemon');
@@ -335,13 +343,25 @@ async function startNewGame(size, isPvp = false) {
 document.getElementById('btn-mode-pvp').addEventListener('click', () => startNewGame(1, true));
 document.getElementById('btn-mode-3v3').addEventListener('click', () => startNewGame(3));
 document.getElementById('btn-mode-1v1').addEventListener('click', () => startNewGame(1));
+document.getElementById('btn-mode-host').addEventListener('click', () => {
+  lanMessage('');
+  startNewGame(1, false, 'host');
+});
+document.getElementById('btn-mode-join').addEventListener('click', async () => {
+  lanMessage('');
+  try {
+    const info = await api('GET', '/api/lan/info');
+    if (!info.lobby) { lanMessage('No game is waiting yet. Ask your friend to host one first.'); return; }
+  } catch (e) { lanMessage('Could not reach the server.'); return; }
+  startNewGame(1, false, 'guest');
+});
 
 /* ═══════════════════════════════════════════
    SCREEN 2 — POKEMON SELECT
    ═══════════════════════════════════════════ */
 
 function renderPokemonSelect() {
-  document.getElementById('team-slot-label').textContent = pvp ? `Player ${pickingP2 ? 2 : 1}: choose your Pokemon`: `Pick Pokemon ${currentSlot + 1} of ${teamSize}`;
+  document.getElementById('team-slot-label').textContent = lan ? 'Choose your Pokemon' : pvp ? `Player ${pickingP2 ? 2 : 1}: choose your Pokemon`: `Pick Pokemon ${currentSlot + 1} of ${teamSize}`;
 
   // team preview circles
   const preview    = document.getElementById('team-preview');
@@ -461,6 +481,8 @@ document.getElementById('btn-confirm-moves').addEventListener('click', async () 
     showScreen('screen-pokemon');
     return;
   }
+
+  if (lan) { await lanSubmitTeam(); return; }
 
   // PvP: Player 1 is done, hand over to Player 2
   if (pvp && !pickingP2) {
@@ -670,6 +692,7 @@ function showGameOver(state) {
                                                         : (won ? 'VICTORY!' : 'DEFEATED!');
   document.getElementById('go-title').style.color = (pvp || won) ? '#4cf07a' : '#f04c4c';
   document.getElementById('go-sub').textContent   = pvp ? 'Good fight!'
+    : lan ? (won ? 'You beat your opponent!' : 'Your opponent won this one.')
     : (won ? 'You defeated the enemy team!' : 'Your team was defeated!');
 }
 
@@ -682,6 +705,20 @@ document.querySelectorAll('.move-btn').forEach(btn => {
     setButtonsEnabled(false);
 
     const mi = parseInt(btn.dataset.index, 10);
+
+    if (lan) {
+      // Lock the move in and wait; the poll animates the round once both picks are in.
+      try { await api('POST', '/api/pick', { token: lanToken, move_index: mi }); }
+      catch (e) {
+        const me = lastState.player.slots[lastState.player.active];
+        renderMoveButtons(me.moves, true);
+        busy = false;
+        return;
+      }
+      logNote('▸ Move locked in. Waiting for your opponent...');
+      lanTick();
+      return;
+    }
     if (pvp && pvpStage === 1) {
         p1Move   = mi;
         pvpStage = 2;
@@ -730,10 +767,151 @@ document.querySelectorAll('.move-btn').forEach(btn => {
   });
 });
 
+/* ═══════════════════════════════════════════
+   LAN MULTIPLAYER
+   ═══════════════════════════════════════════ */
+
+function lanMessage(text) { document.getElementById('lan-msg').textContent = text || ''; }
+
+function logNote(text) {
+  const logDiv = document.getElementById('battle-log');
+  const span   = document.createElement('span');
+  span.className   = 'log-line start';
+  span.textContent = text;
+  logDiv.appendChild(span);
+  logDiv.appendChild(document.createElement('br'));
+  logDiv.scrollTop = logDiv.scrollHeight;
+}
+
+function showLobby(icon, title, sub, label, action) {
+  document.getElementById('lobby-icon').textContent  = icon;
+  document.getElementById('lobby-title').textContent = title;
+  document.getElementById('lobby-sub').textContent   = sub;
+  document.getElementById('btn-lobby-action').textContent = label;
+  lobbyAction = action;
+  document.getElementById('lobby-overlay').classList.remove('hidden');
+}
+function hideLobby() { document.getElementById('lobby-overlay').classList.add('hidden'); }
+document.getElementById('btn-lobby-action').addEventListener('click', () => { if (lobbyAction) lobbyAction(); });
+
+function lanStopPolling() {
+  if (lanTimer) clearInterval(lanTimer);
+  lanTimer = null; lanTicking = false;
+}
+
+function lanStop() {
+  lanStopPolling();
+  lanAnimating = false; lanStarted = false; lanRound = 0; lanAwayShown = false;
+  lanToken = null; lanSeat = 0; lan = false; lanRole = null; lobbyAction = null;
+  hideLobby();
+}
+
+function lanClosed(msg) {
+  lanStop();
+  document.getElementById('game-over-overlay').classList.add('hidden');
+  busy = false;
+  lanMessage(msg);
+  showScreen('screen-welcome');
+}
+
+async function lanLeave() {
+  const tok = lanToken;
+  lanStop();
+  try { if (tok) await api('POST', '/api/reset', { token: tok }); } catch (e) { /* already gone */ }
+  document.getElementById('game-over-overlay').classList.add('hidden');
+  busy = false;
+  showScreen('screen-welcome');
+}
+
+async function lanSubmitTeam() {
+  const role = lanRole;
+  let res;
+  try {
+    res = await api('POST', role === 'host' ? '/api/lan/host' : '/api/lan/join',
+                    { pid0: team[0].pid, moves0: teamMoves[0] });
+  } catch (e) {
+    lanStop();
+    lanMessage(role === 'host' ? 'Could not start a LAN game. Is one already running?'
+                               : 'That game is no longer waiting. Ask the host to start again.');
+    showScreen('screen-welcome');
+    return;
+  }
+  lanToken = res.token; lanSeat = res.seat;
+  clearLog();
+  document.getElementById('screen-battle').classList.add('solo');
+  showScreen('screen-battle');
+
+  if (role === 'host') {
+    let sub = 'Ask your friend to open this on the same Wi-Fi:';
+    try {
+      const info = await api('GET', '/api/lan/info');
+      sub += `\nhttp://${info.ip}:${info.port}/?join`;
+      if (info.ips.length > 1) sub += `\n(if that fails, try: ${info.ips.slice(1).join(', ')})`;
+    } catch (e) { sub += '\n(could not work out this PC\'s address)'; }
+    showLobby('📡', 'WAITING FOR PLAYER 2', sub, 'Cancel', lanLeave);
+  }
+  lanTimer = setInterval(lanTick, 800);
+  lanTick();
+}
+
+async function lanTick() {
+  if (!lan || !lanToken || lanTicking || lanAnimating) return;
+  lanTicking = true;
+  let state;
+  try { state = await api('GET', '/api/state?t=' + encodeURIComponent(lanToken)); }
+  catch (e) {
+    lanTicking = false;
+    if (/ 403 /.test(e.message)) lanClosed('The LAN game was closed.');
+    return;
+  }
+  lanTicking = false;
+  if (!lan) return;                                  // left while the request was in flight
+
+  if (state.phase === 'idle')  { lanClosed('The LAN game was closed.'); return; }
+  if (state.phase === 'lobby') return;
+
+  if (state.away && !lanAwayShown) {
+    lanAwayShown = true;
+    showLobby('📴', 'OPPONENT DISCONNECTED', 'Waiting for them to come back...', 'Leave game', lanLeave);
+  } else if (!state.away && lanAwayShown) {
+    lanAwayShown = false; hideLobby();
+  }
+
+  if (!lanStarted) {                                 // opponent joined: start the battle view
+    lanStarted = true; lanRound = state.round;
+    hideLobby();
+    lastState = state;
+    initBattle(state);
+    return;
+  }
+  if (state.round > lanRound) {                      // a round was resolved: play it back
+    lanRound = state.round; lanAnimating = true; lastState = state;
+    appendLog(state.log, line => processLogLine(line, state), () => lanFinishRound(state));
+  }
+}
+
+function lanFinishRound(state) {
+  const pActive = state.player.slots[state.player.active];
+  const eActive = state.enemy.slots[state.enemy.active];
+  display.player = { name: pActive.name, hp: pActive.hp, maxHp: pActive.maxHp, status: pActive.status };
+  display.enemy  = { name: eActive.name, hp: eActive.hp, maxHp: eActive.maxHp, status: eActive.status };
+  updateFighterUI('player', pActive);
+  updateFighterUI('enemy',  eActive);
+  renderPartySlots(state.player);
+  renderEnemyParty(state.enemy);
+  lanAnimating = false;
+  if (state.phase === 'over') { lanStopPolling(); showGameOver(state); }
+  else { renderMoveButtons(pActive.moves, true); busy = false; }
+}
+
+// Opening http://<host-ip>:8080/?join jumps straight to joining
+if (/[?&]join\b/.test(location.search)) document.getElementById('btn-mode-join').click();
+
 /* ── Play again ──────────────────────────────── */
 
 document.getElementById('btn-play-again').addEventListener('click', async () => {
-  await api('POST', '/api/reset');
+  if (!lan) await api('POST', '/api/reset');   // an online game is replaced by the next host
+  lanStop();
   document.getElementById('game-over-overlay').classList.add('hidden');
   team            = [null, null, null];
   teamMoves       = [[], [], []];

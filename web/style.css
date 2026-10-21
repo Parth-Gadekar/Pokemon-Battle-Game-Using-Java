@@ -804,8 +804,18 @@ body {
 #screen-battle.solo .enemy-party-bar { display: none; }
 .mode-buttons {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 20px;
 }
+.lan-msg {
+  min-height: 1.4em;
+  margin-top: 14px;
+  text-align: center;
+  font-size: 14px;
+  color: #f5c518;
+}
+#lobby-sub { white-space: pre-line; word-break: break-all; }
 
 .pass-overlay {
   position: fixed; inset: 0; z-index: 300;

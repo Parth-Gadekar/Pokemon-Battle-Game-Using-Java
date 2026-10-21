@@ -36,7 +36,7 @@ public class Main {
     }
 
     // ─── ENUMS ───────────────────────────────────────────────────
-    enum Phase  { IDLE, BATTLE, OVER }
+    enum Phase  { IDLE, LOBBY, BATTLE, OVER }
     enum Status { NONE, BURN, PARALYSIS, SLEEP, POISON }
 
     // ─── MOVE BLUEPRINT ──────────────────────────────────────────
@@ -119,6 +119,15 @@ public class Main {
         int           result      = 0;
         boolean       forceSwitch = false;
         boolean       pvp         = false;
+
+        // ── LAN multiplayer (two devices) ──
+        // seat 1 = host = 'player' party, seat 2 = guest = 'enemy' party.
+        static final int NO_PICK = -9;
+        boolean       lan   = false;
+        String        tok1  = null, tok2 = null;   // secret seat tokens
+        int           pick1 = NO_PICK, pick2 = NO_PICK;
+        int           round = 0;                   // bumps once per resolved round
+        long          seen1 = 0, seen2 = 0;        // last time each seat polled (ms)
         StringBuilder log         = new StringBuilder();
 
         private static Game instance;

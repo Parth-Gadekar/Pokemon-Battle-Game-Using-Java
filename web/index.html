@@ -30,7 +30,10 @@
       <button class="btn-pixel btn-primary" id="btn-mode-3v3">▶ 3 VS 3</button>
       <button class="btn-pixel btn-primary" id="btn-mode-1v1">▶ 1 VS 1</button>
       <button class="btn-pixel btn-primary" id="btn-mode-pvp">▶ Pass and Play</button>
+      <button class="btn-pixel btn-primary" id="btn-mode-host">📡 Host LAN Game</button>
+      <button class="btn-pixel btn-primary" id="btn-mode-join">🔗 Join LAN Game</button>
     </div>
+    <div class="lan-msg" id="lan-msg"></div>
   </div>
 </div>
 
@@ -186,6 +189,14 @@
     <div class="go-title" id="pass-title">PLAYER 2</div>
     <div class="go-sub"   id="pass-sub"></div>
     <button class="btn-pixel btn-primary" id="btn-pass-ready">I'm ready</button>
+  </div>
+</div>
+<div class="pass-overlay hidden" id="lobby-overlay">
+  <div class="game-over-box">
+    <div class="go-icon"  id="lobby-icon">📡</div>
+    <div class="go-title" id="lobby-title">WAITING</div>
+    <div class="go-sub"   id="lobby-sub"></div>
+    <button class="btn-pixel btn-primary" id="btn-lobby-action">Cancel</button>
   </div>
 </div>
 <script src="game.js"></script>
