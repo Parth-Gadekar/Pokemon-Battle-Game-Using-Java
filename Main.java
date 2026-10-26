@@ -1,10 +1,10 @@
 public class Main {
 
     public class Constants {
-        static final int NUM_CREATURE = 9;
+        static final int NUM_CREATURE = 18;
         static final int MOVES_TOTAL  = 8;
         static final int MOVES_BATTLE = 4;
-        static final int NUM_TYPES    = 9;
+        static final int NUM_TYPES    = 18;
         static final int PARTY_SIZE   = 3;
 
         static final int T_NORMAL   = 0;
@@ -16,27 +16,46 @@ public class Main {
         static final int T_DARK     = 6;
         static final int T_ROCK     = 7;
         static final int T_FIGHTING = 8;
+        static final int T_FLYING   = 9;
+        static final int T_DRAGON   = 10;
+        static final int T_ICE      = 11;
+        static final int T_STEEL    = 12;
+        static final int T_FAIRY    = 13;
+        static final int T_GHOST    = 14;
+        static final int T_BUG      = 15;
+        static final int T_GROUND   = 16;
+        static final int T_POISON   = 17;
 
         static final String[] TYPE_NAME = {
-            "Normal","Fire","Water","Grass","Electric","Psychic","Dark","Rock","Fighting"
+            "Normal","Fire","Water","Grass","Electric","Psychic","Dark","Rock","Fighting",
+            "Flying","Dragon","Ice","Steel","Fairy","Ghost","Bug","Ground","Poison"
         };
 
         static final int[][] CHART = {
-         //        NOR  FIR  WAT  GRS  ELC  PSY  DRK  ROC  FIG
-        /*NOR*/  { 10,  10,  10,  10,  10,  10,  10,   5,  10 },
-        /*FIR*/  { 10,   5,   5,  20,  10,  10,  10,   5,  10 },
-        /*WAT*/  { 10,  20,   5,   5,  10,  10,  10,  20,  10 },
-        /*GRS*/  { 10,   5,  20,   5,  10,  10,  10,  20,  10 },
-        /*ELC*/  { 10,  10,  20,   5,   5,  10,  10,  10,  10 },
-        /*PSY*/  { 20,  10,  10,  10,  10,   5,   5,  10,  20 },
-        /*DRK*/  { 10,  10,  10,  10,  10,  20,   5,  10,   5 },
-        /*ROC*/  { 10,  20,  10,  10,  10,  10,  10,  10,   5 },
-        /*FIG*/  { 20,  10,  10,  10,  10,   5,  20,  20,  10 }
+         //        NOR  FIR  WAT  GRS  ELC  PSY  DRK  ROC  FIG  FLY  DRG  ICE  STL  FAI  GHO  BUG  GRD  PSN
+        /*NOR*/  {  10,  10,  10,  10,  10,  10,  10,   5,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10 },
+        /*FIR*/  {  10,   5,   5,  20,  10,  10,  10,   5,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10 },
+        /*WAT*/  {  10,  20,   5,   5,  10,  10,  10,  20,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10 },
+        /*GRS*/  {  10,   5,  20,   5,  10,  10,  10,  20,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10 },
+        /*ELC*/  {  10,  10,  20,   5,   5,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10 },
+        /*PSY*/  {  20,  10,  10,  10,  10,   5,   5,  10,  20,  10,  10,  10,  10,  10,  10,  10,  10,  10 },
+        /*DRK*/  {  10,  10,  10,  10,  10,  20,   5,  10,   5,  10,  10,  10,  10,  10,  10,  10,  10,  10 },
+        /*ROC*/  {  10,  20,  10,  10,  10,  10,  10,  10,   5,  10,  10,  10,  10,  10,  10,  10,  10,  10 },
+        /*FIG*/  {  20,  10,  10,  10,  10,   5,  20,  20,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10 },
+        /*FLY*/  {  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10 },
+        /*DRG*/  {  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10 },
+        /*ICE*/  {  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10 },
+        /*STL*/  {  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10 },
+        /*FAI*/  {  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10 },
+        /*GHO*/  {  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10 },
+        /*BUG*/  {  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10 },
+        /*GRD*/  {  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10 },
+        /*PSN*/  {  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10,  10 }
         };
     }
 
     // ─── ENUMS ───────────────────────────────────────────────────
-    enum Phase  { IDLE, LOBBY, BATTLE, OVER }
+    enum Phase  { IDLE, BATTLE, OVER }
     enum Status { NONE, BURN, PARALYSIS, SLEEP, POISON }
 
     // ─── MOVE BLUEPRINT ──────────────────────────────────────────
@@ -118,16 +137,6 @@ public class Main {
         Party         enemy       = new Party();
         int           result      = 0;
         boolean       forceSwitch = false;
-        boolean       pvp         = false;
-
-        // ── LAN multiplayer (two devices) ──
-        // seat 1 = host = 'player' party, seat 2 = guest = 'enemy' party.
-        static final int NO_PICK = -9;
-        boolean       lan   = false;
-        String        tok1  = null, tok2 = null;   // secret seat tokens
-        int           pick1 = NO_PICK, pick2 = NO_PICK;
-        int           round = 0;                   // bumps once per resolved round
-        long          seen1 = 0, seen2 = 0;        // last time each seat polled (ms)
         StringBuilder log         = new StringBuilder();
 
         private static Game instance;
@@ -251,6 +260,114 @@ public class Main {
                 mv("Slash",        70,  Constants.T_NORMAL,   100, "physical", null),
                 mv("Sucker Punch", 60,  Constants.T_DARK,     100, "physical", null),
                 mv("Fire Punch",   75,  Constants.T_FIRE,     100, "physical", "burn"),
+            }),
+
+            /* 9 — Galewing | Flying */
+            new Template("Galewing", Constants.T_FLYING, 490, 85, 85, 65, 70, 115, new MoveBlueprint[]{
+                mv("Gust",          40,  Constants.T_FLYING,   100, "special",  null),
+                mv("Wing Attack",   60,  Constants.T_FLYING,   100, "physical", null),
+                mv("Drill Peck",    80,  Constants.T_FLYING,    95, "physical", null),
+                mv("Air Slash",     75,  Constants.T_FLYING,    95, "special",  null),
+                mv("Hurricane",     110, Constants.T_FLYING,    70, "special",  null),
+                mv("Brave Bird",    120, Constants.T_FLYING,    85, "physical", null),
+                mv("Thunder Shock", 40,  Constants.T_ELECTRIC, 100, "special",  null),
+                mv("Quick Attack",  40,  Constants.T_NORMAL,   100, "physical", null),
+            }),
+
+            /* 10 — Drakonyx | Dragon */
+            new Template("Drakonyx", Constants.T_DRAGON, 560, 105, 90, 85, 80, 80, new MoveBlueprint[]{
+                mv("Dragon Claw",   80,  Constants.T_DRAGON,    95, "physical", null),
+                mv("Dragon Pulse",  85,  Constants.T_DRAGON,    95, "special",  null),
+                mv("Outrage",       110, Constants.T_DRAGON,    75, "physical", null),
+                mv("Slash",         70,  Constants.T_NORMAL,   100, "physical", null),
+                mv("Flamethrower",  90,  Constants.T_FIRE,      90, "special",  null),
+                mv("Earthquake",    100, Constants.T_GROUND,    90, "physical", null),
+                mv("Roar Blast",    75,  Constants.T_NORMAL,    95, "special",  null),
+                mv("Tail Strike",   45,  Constants.T_NORMAL,   100, "physical", null),
+            }),
+
+            /* 11 — Frostmaw | Ice */
+            new Template("Frostmaw", Constants.T_ICE, 520, 85, 105, 75, 85, 75, new MoveBlueprint[]{
+                mv("Ice Shard",     40,  Constants.T_ICE,      100, "physical", null),
+                mv("Icicle Crash",  85,  Constants.T_ICE,       90, "physical", null),
+                mv("Blizzard",      110, Constants.T_ICE,       70, "special",  null),
+                mv("Frost Breath",  60,  Constants.T_ICE,      100, "special",  null),
+                mv("Bite",          60,  Constants.T_DARK,     100, "physical", null),
+                mv("Body Slam",     85,  Constants.T_NORMAL,   100, "physical", null),
+                mv("Aqua Jet",      40,  Constants.T_WATER,    100, "physical", null),
+                mv("Psycho Frost",  80,  Constants.T_PSYCHIC,   90, "special",  null),
+            }),
+
+            /* 12 — Ironhide | Steel */
+            new Template("Ironhide", Constants.T_STEEL, 540, 95, 55, 115, 90, 50, new MoveBlueprint[]{
+                mv("Metal Claw",    50,  Constants.T_STEEL,     95, "physical", null),
+                mv("Iron Head",     80,  Constants.T_STEEL,    100, "physical", null),
+                mv("Flash Cannon",  80,  Constants.T_STEEL,    100, "special",  null),
+                mv("Meteor Mash",   90,  Constants.T_STEEL,     90, "physical", null),
+                mv("Rock Slide",    75,  Constants.T_ROCK,      90, "physical", null),
+                mv("Brick Break",   75,  Constants.T_FIGHTING, 100, "physical", null),
+                mv("Quick Bolt",    40,  Constants.T_ELECTRIC, 100, "special",  null),
+                mv("Tackle",        35,  Constants.T_NORMAL,   100, "physical", null),
+            }),
+
+            /* 13 — Pixiebell | Fairy */
+            new Template("Pixiebell", Constants.T_FAIRY, 500, 60, 105, 70, 100, 85, new MoveBlueprint[]{
+                mv("Fairy Wind",    40,  Constants.T_FAIRY,    100, "special",  null),
+                mv("Dazzle Beam",   80,  Constants.T_FAIRY,    100, "special",  null),
+                mv("Moonblast",     95,  Constants.T_FAIRY,     90, "special",  null),
+                mv("Play Rough",    90,  Constants.T_FAIRY,     90, "physical", null),
+                mv("Psybeam",       65,  Constants.T_PSYCHIC,  100, "special",  null),
+                mv("Energy Ball",   80,  Constants.T_GRASS,    100, "special",  null),
+                mv("Shadow Sneak",  40,  Constants.T_GHOST,    100, "physical", null),
+                mv("Swift",         60,  Constants.T_NORMAL,   100, "special",  null),
+            }),
+
+            /* 14 — Spectrowl | Ghost */
+            new Template("Spectrowl", Constants.T_GHOST, 470, 75, 110, 65, 80, 100, new MoveBlueprint[]{
+                mv("Shadow Sneak",  40,  Constants.T_GHOST,    100, "physical", null),
+                mv("Shadow Claw",   70,  Constants.T_GHOST,    100, "physical", null),
+                mv("Shadow Ball",   80,  Constants.T_GHOST,    100, "special",  null),
+                mv("Hex Wail",      95,  Constants.T_GHOST,     90, "special",  null),
+                mv("Dark Pulse",    80,  Constants.T_DARK,      95, "special",  null),
+                mv("Sludge Bomb",   70,  Constants.T_POISON,   100, "special",  "poison"),
+                mv("Psychic",       90,  Constants.T_PSYCHIC,   90, "special",  null),
+                mv("Tackle",        35,  Constants.T_NORMAL,   100, "physical", null),
+            }),
+
+            /* 15 — Chitinox | Bug */
+            new Template("Chitinox", Constants.T_BUG, 480, 100, 55, 85, 65, 95, new MoveBlueprint[]{
+                mv("Bug Bite",      60,  Constants.T_BUG,      100, "physical", null),
+                mv("X-Scissor",     80,  Constants.T_BUG,      100, "physical", null),
+                mv("Bug Buzz",      90,  Constants.T_BUG,      100, "special",  null),
+                mv("Megahorn",      120, Constants.T_BUG,       85, "physical", null),
+                mv("Leaf Blade",    90,  Constants.T_GRASS,     95, "physical", null),
+                mv("Steel Wing",    70,  Constants.T_STEEL,     90, "physical", null),
+                mv("Rock Throw",    60,  Constants.T_ROCK,      90, "physical", null),
+                mv("Tackle",        35,  Constants.T_NORMAL,   100, "physical", null),
+            }),
+
+            /* 16 — Burrowak | Ground */
+            new Template("Burrowak", Constants.T_GROUND, 570, 105, 55, 95, 70, 60, new MoveBlueprint[]{
+                mv("Mud Slap",      35,  Constants.T_GROUND,   100, "special",  null),
+                mv("Dig Claw",      80,  Constants.T_GROUND,   100, "physical", null),
+                mv("Earthquake",    100, Constants.T_GROUND,    90, "physical", null),
+                mv("Earth Power",   90,  Constants.T_GROUND,   100, "special",  null),
+                mv("Rock Slide",    75,  Constants.T_ROCK,      90, "physical", null),
+                mv("Brick Break",   75,  Constants.T_FIGHTING, 100, "physical", null),
+                mv("Crunch",        80,  Constants.T_DARK,      95, "physical", null),
+                mv("Tackle",        35,  Constants.T_NORMAL,   100, "physical", null),
+            }),
+
+            /* 17 — Venomaw | Poison */
+            new Template("Venomaw", Constants.T_POISON, 510, 80, 90, 80, 85, 80, new MoveBlueprint[]{
+                mv("Acid Spray",    40,  Constants.T_POISON,   100, "special",  "poison"),
+                mv("Venom Fang",    50,  Constants.T_POISON,   100, "physical", null),
+                mv("Cross Poison",  70,  Constants.T_POISON,   100, "physical", null),
+                mv("Poison Jab",    80,  Constants.T_POISON,   100, "physical", null),
+                mv("Sludge Bomb",   90,  Constants.T_POISON,   100, "special",  "poison"),
+                mv("Gunk Shot",     120, Constants.T_POISON,    80, "physical", "poison"),
+                mv("Bite",          60,  Constants.T_DARK,     100, "physical", null),
+                mv("Tackle",        35,  Constants.T_NORMAL,   100, "physical", null),
             }),
         };
     }
@@ -428,16 +545,11 @@ public class Main {
         }
 
         // ── Main round logic
-       static final int CPU_PICK = -2;   // "let the CPU choose"
-
-        static void processRound(int playerMi) { processRound(playerMi, CPU_PICK); }
-
-        static void processRound(int playerMi, int enemyMi) {
+        static void processRound(int playerMi) {
             Game    g  = Game.get();
             Fighter pf = g.player.slots[g.player.active];
             Fighter ef = g.enemy.slots[g.enemy.active];
-            boolean cpu = (enemyMi == CPU_PICK);
-            int     em  = cpu ? EnemyPickMove() : enemyMi;
+            int     em = EnemyPickMove();
 
             boolean playerFirst = pf.speed > ef.speed ||
                                   (pf.speed == ef.speed && Math.random() < 0.5);
@@ -469,7 +581,7 @@ public class Main {
                 }
 
                 // ── Enemy attacks second
-                if (cpu) em = EnemyPickMove();
+                em = EnemyPickMove();
                 if (em < 0) {
                     // FIX: enemy struggles instead of skipping
                     if (doStruggle(ef, pf)) {
