@@ -7,13 +7,23 @@
 const TYPE_COLOR = {
   Normal:   '#9BA0A8',
   Fire:     '#FF7035',
-  Water:    '#4a82FF',
+  Water:    '#246aff',
   Grass:    '#5ec454',
   Electric: '#f5c518',
   Psychic:  '#f04888',
   Dark:     '#8060a0',
   Rock:     '#976119',
-  Fighting: '#d86a25'
+  Fighting: '#d86a25',
+  Flying: '#4d8dd2',
+  Dragon: '#4e20cb',
+  Ice: '#2dcceb',
+  Steel: '#c8d8d4',
+  Fairy: '#f16cd0',
+  Ghost: '#270a75',
+  Bug:  '#c2e225',
+  Ground: '#ae7557',
+  Poison: '#a028b6'
+
 };
 
 const POKEMON_EMOJI = {
@@ -26,6 +36,15 @@ const POKEMON_EMOJI = {
   Thedude:   '⭐',
   Rockruff:  '🪨',
   Elmacho:   '👊',
+  Soarly:    '🦢',
+  Drakonyx:  '🐉',
+  Freezale:  '❄️',
+  Bauxer:    '🧲',
+  Faireon:   '✨',
+  Spectrowl: '👻',
+  Mothra:    '🐞',
+  Tecton:    '🛘',
+  Cynidor:   '☠️'
 };
 
 const STATUS_COLOR = {
